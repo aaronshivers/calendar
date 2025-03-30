@@ -98,6 +98,25 @@ poetry run black .
 ```
 - These steps are also run in the GitHub Actions workflow to ensure code quality.
 
+## Type Checking
+- **Type Checking**: Use `mypy` to check for type-related issues:
+```shell
+poetry run mypy .
+```
+
+## Managing Holidays
+- **Add a Holiday**:
+```shell
+poetry run python generate_calendar.py add-holiday "National Pizza Day" 2 9
+```
+- **Remove a Holiday**:
+```shell
+poetry run python generate_calendar.py remove-holiday "National Pizza Day"
+```
+
+## Documentation
+- Documentation is generated using `pydoc` and available as `generate_calendar.html` in the repository.
+
 ## Development
 - Edit `generate_calendar.py` to modify the core logic.
 - Edit `holidays.json` to update the holiday list.
