@@ -1,17 +1,18 @@
-# Custom US Holidays Calendar
+# US Holidays Calendar
 
 This project generates a custom iCal (`.ics`) file containing a curated list of US holidays, including federal holidays and additional non-national holidays like Halloween and Festivus. It’s designed to be reusable for any year range and can be subscribed to for automatic updates.
 
 ## Features
 - Generates a custom `.ics` file for a range of years (current year and next year by default).
 - Calculates federal holidays locally (e.g., New Year's Day, Independence Day) without external API dependencies.
-- Includes manually defined holidays (e.g., Groundhog Day, Mother's Day) with fixed or calculated dates from `holidays.json`.
+- Includes manually defined holidays (e.g., Groundhog Day, Mother's Day) with fixed or calculated dates from `src/holidays.json`.
 - Supports subscription via a hosted URL for periodic updates in calendar apps.
+- CLI commands to add/remove holidays and dry-run generation.
 
 ## Requirements
 - Python 3.13+
 - [Poetry](https://python-poetry.org/) for dependency management
-- Dependencies: `icalendar`
+- Dependencies: `icalendar`, `click`
 
 ## Installation
 1. Clone the repository:

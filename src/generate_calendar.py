@@ -15,7 +15,9 @@ if sys.version_info < (3, 13):
     sys.exit(1)
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -102,7 +104,7 @@ def get_last_weekday(year: int, month: int, weekday: int) -> datetime_date:
     """Calculate the last weekday of a month (e.g., last Monday in May)."""
     next_month = month % 12 + 1
     next_year = year if next_month != 1 else year + 1
-    last_day = (datetime(next_year, next_month, 1).date() - timedelta(days=1))
+    last_day = datetime(next_year, next_month, 1).date() - timedelta(days=1)
     days_to_subtract = (last_day.weekday() - weekday + 7) % 7
     return last_day - timedelta(days=days_to_subtract)
 
@@ -117,7 +119,9 @@ def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
     return holiday_date
 
 
-def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+def get_federal_holidays(
+    year: int, federal_holidays: List[Dict[str, Any]]
+) -> List[Dict[str, str]]:
     """Calculate federal holidays for a given year."""
     holidays = []
     for holiday in federal_holidays:
@@ -126,11 +130,10 @@ def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> L
         elif "last" in holiday:
             date = get_last_weekday(year, holiday["month"], holiday["weekday"])
         else:
-            date = get_nth_weekday(year, holiday["month"], holiday["weekday"], holiday["nth"])
-        holidays.append({
-            "name": holiday["name"],
-            "date": date.strftime("%Y-%m-%d")
-        })
+            date = get_nth_weekday(
+                year, holiday["month"], holiday["weekday"], holiday["nth"]
+            )
+        holidays.append({"name": holiday["name"], "date": date.strftime("%Y-%m-%d")})
     return holidays
 
 
@@ -166,19 +169,22 @@ def generate_calendar(start_year: int, end_year: int, dry_run: bool = False) -> 
             if holiday["type"] == "easter":
                 date = get_easter_sunday(YEAR, cache)
             elif holiday["type"] == "nth_weekday":
-                date = get_nth_weekday(YEAR, holiday["month"], holiday["weekday"], holiday["nth"])
-            calculated_holidays_with_year.append({
-                "name": holiday["name"],
-                "date": date.strftime("%Y-%m-%d")
-            })
+                date = get_nth_weekday(
+                    YEAR, holiday["month"], holiday["weekday"], holiday["nth"]
+                )
+            calculated_holidays_with_year.append(
+                {"name": holiday["name"], "date": date.strftime("%Y-%m-%d")}
+            )
 
         # Convert manual holidays to full dates for the year
         manual_holidays_with_year = []
         for holiday in MANUAL_HOLIDAYS:
-            manual_holidays_with_year.append({
-                "name": holiday["name"],
-                "date": f"{YEAR}-{holiday['month']:02d}-{holiday['day']:02d}"
-            })
+            manual_holidays_with_year.append(
+                {
+                    "name": holiday["name"],
+                    "date": f"{YEAR}-{holiday['month']:02d}-{holiday['day']:02d}",
+                }
+            )
 
         year_holidays.extend(manual_holidays_with_year)
         year_holidays.extend(calculated_holidays_with_year)
@@ -209,9 +215,7 @@ def generate_calendar(start_year: int, end_year: int, dry_run: bool = False) -> 
         # Skip duplicates
         holiday_key = (holiday_name, holiday_date)
         if holiday_key in seen:
-            logger.warning(
-                f"Skipping duplicate: {holiday_name} on {holiday_date}"
-            )
+            logger.warning(f"Skipping duplicate: {holiday_name} on {holiday_date}")
             continue
         seen.add(holiday_key)
 
