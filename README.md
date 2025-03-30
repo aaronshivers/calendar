@@ -84,7 +84,7 @@ The calendar includes:
 ## Testing
 - Run unit tests to verify holiday calculations:
 ```shell
-poetry run python -m unittest test_generate_calendar
+poetry run python -m unittest tests/test_generate_calendar
 ```
 
 ## Linting and Formatting
@@ -129,6 +129,11 @@ poetry run python generate_calendar.py remove-holiday "National Pizza Day"
 - Edit `holidays.json` to update the holiday list.
 - Test locally before pushing updates to the hosted file.
 
+## Dry Run
+- Use the `--dry-run` flag to preview the holidays without writing the iCal file:
+  ```bash
+  poetry run python generate_calendar.py --dry-run
+  
 ## License
 MIT License - feel free to use, modify, and distribute.
 

@@ -13,7 +13,7 @@ from generate_calendar import (
 class TestHolidayCalculations(unittest.TestCase):
     def setUp(self):
         # Load holidays.json for federal holidays
-        with open("holidays.json", "r") as f:
+        with open("src/holidays.json", "r") as f:
             self.holiday_config = json.load(f)
         self.federal_holidays = self.holiday_config["federal_holidays"]
         self.cache = load_cache()

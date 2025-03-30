@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 def load_config() -> Dict[str, Any]:
     """Load configuration from config.json."""
     try:
-        with open("config.json", "r") as f:
+        with open("config/config.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error("config.json not found")
+        logger.error("config/config.json not found")
         sys.exit(1)
     except json.JSONDecodeError:
-        logger.error("config.json is malformed")
+        logger.error("config/config.json is malformed")
         sys.exit(1)
 
 
@@ -42,13 +42,13 @@ DEFAULT_YEAR_RANGE: int = CONFIG["default_year_range"]
 def load_holidays() -> Dict[str, Any]:
     """Load holiday definitions from holidays.json."""
     try:
-        with open("holidays.json", "r") as f:
+        with open("src/holidays.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error("holidays.json not found")
+        logger.error("src/holidays.json not found")
         sys.exit(1)
     except json.JSONDecodeError:
-        logger.error("holidays.json is malformed")
+        logger.error("src/holidays.json is malformed")
         sys.exit(1)
 
 
@@ -82,10 +82,10 @@ def get_easter_sunday(year: int, cache: Dict[str, str]) -> datetime_date:
     h = (19 * a + b - d - g + 15) % 30
     i = c // 4
     k = c % 4
-    l = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * l) // 451
-    month = (h + l - 7 * m + 114) // 31
-    day = ((h + l - 7 * m + 114) % 31) + 1
+    offset_l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * offset_l) // 451
+    month = (h + offset_l - 7 * m + 114) // 31
+    day = ((h + offset_l - 7 * m + 114) % 31) + 1
     date = datetime(year, month, day).date()
     cache[cache_key] = date.strftime("%Y-%m-%d")
     return date
@@ -95,7 +95,8 @@ def get_nth_weekday(year: int, month: int, weekday: int, nth: int) -> datetime_d
     """Calculate the nth weekday of a month (e.g., 3rd Monday in January)."""
     first_day = datetime(year, month, 1).date()
     first_weekday = first_day + timedelta(days=(weekday - first_day.weekday() + 7) % 7)
-    return first_weekday + timedelta(weeks=nth-1)
+    return first_weekday + timedelta(weeks=nth - 1)
+
 
 def get_last_weekday(year: int, month: int, weekday: int) -> datetime_date:
     """Calculate the last weekday of a month (e.g., last Monday in May)."""
@@ -115,6 +116,7 @@ def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
         return (date + timedelta(days=1)).strftime("%Y-%m-%d")
     return holiday_date
 
+
 def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     """Calculate federal holidays for a given year."""
     holidays = []
@@ -132,8 +134,14 @@ def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> L
     return holidays
 
 
-def generate_calendar(start_year: int, end_year: int) -> None:
-    """Generate an iCal file with holidays for the specified year range."""
+def generate_calendar(start_year: int, end_year: int, dry_run: bool = False) -> None:
+    """Generate an iCal file with holidays for the specified year range.
+
+    Args:
+        start_year: The starting year for the calendar.
+        end_year: The ending year for the calendar.
+        dry_run: If True, log holidays without writing the iCal file.
+    """
     # Load holidays
     holiday_config = load_holidays()
     APPROVED_HOLIDAYS = holiday_config["approved_holidays"]
@@ -190,13 +198,20 @@ def generate_calendar(start_year: int, end_year: int) -> None:
         holiday_date = holiday["date"]
 
         # Apply observance rules for specific holidays
-        if holiday_name in ["New Year's Day", "Independence Day", "Veterans Day", "Christmas Day"]:
+        if holiday_name in [
+            "New Year's Day",
+            "Independence Day",
+            "Veterans Day",
+            "Christmas Day",
+        ]:
             holiday_date = adjust_for_observance(holiday_date, holiday_name)
 
         # Skip duplicates
         holiday_key = (holiday_name, holiday_date)
         if holiday_key in seen:
-            logger.warning(f"Skipping duplicate: {holiday_name} on {holiday_date}")
+            logger.warning(
+                f"Skipping duplicate: {holiday_name} on {holiday_date}"
+            )
             continue
         seen.add(holiday_key)
 
@@ -208,10 +223,15 @@ def generate_calendar(start_year: int, end_year: int) -> None:
             cal.add_component(event)
             logger.info(f"Added: {holiday_name} on {holiday_date}")
 
+    if dry_run:
+        logger.info("Dry run complete, iCal file not written.")
+        return
+
     # Save the iCal file
     with open(OUTPUT_FILE, "wb") as f:
         f.write(cal.to_ical())
     logger.info(f"Calendar saved as '{OUTPUT_FILE}'")
+
 
 @click.group()
 def cli():
@@ -225,11 +245,22 @@ def cli():
 @click.argument("day", type=int)
 def add_holiday(name: str, month: int, day: int) -> None:
     """Add a new manual holiday to holidays.json."""
+    # Validate month and day
+    if not (1 <= month <= 12):
+        logger.error(f"Invalid month: {month}. Must be between 1 and 12.")
+        sys.exit(1)
+    try:
+        # Check if the date is valid for the current year
+        datetime(2025, month, day)  # Use a fixed year for validation
+    except ValueError as e:
+        logger.error(f"Invalid date: {month:02d}-{day:02d}. {str(e)}")
+        sys.exit(1)
+
     holiday_config = load_holidays()
     new_holiday = {"name": name, "month": month, "day": day}
     holiday_config["manual_holidays"].append(new_holiday)
     holiday_config["approved_holidays"].append(name)
-    with open("holidays.json", "w") as f:
+    with open("src/holidays.json", "w") as f:
         json.dump(holiday_config, f, indent=2)
     logger.info(f"Added holiday: {name} on {month:02d}-{day:02d}")
 
@@ -239,11 +270,19 @@ def add_holiday(name: str, month: int, day: int) -> None:
 def remove_holiday(name: str) -> None:
     """Remove a holiday from holidays.json."""
     holiday_config = load_holidays()
-    holiday_config["manual_holidays"] = [h for h in holiday_config["manual_holidays"] if h["name"] != name]
-    holiday_config["calculated_holidays"] = [h for h in holiday_config["calculated_holidays"] if h["name"] != name]
-    holiday_config["federal_holidays"] = [h for h in holiday_config["federal_holidays"] if h["name"] != name]
-    holiday_config["approved_holidays"] = [h for h in holiday_config["approved_holidays"] if h != name]
-    with open("holidays.json", "w") as f:
+    holiday_config["manual_holidays"] = [
+        h for h in holiday_config["manual_holidays"] if h["name"] != name
+    ]
+    holiday_config["calculated_holidays"] = [
+        h for h in holiday_config["calculated_holidays"] if h["name"] != name
+    ]
+    holiday_config["federal_holidays"] = [
+        h for h in holiday_config["federal_holidays"] if h["name"] != name
+    ]
+    holiday_config["approved_holidays"] = [
+        h for h in holiday_config["approved_holidays"] if h != name
+    ]
+    with open("src/holidays.json", "w") as f:
         json.dump(holiday_config, f, indent=2)
     logger.info(f"Removed holiday: {name}")
 
@@ -255,14 +294,31 @@ def main() -> None:
         cli()
     else:
         # Parse command-line arguments for calendar generation
-        parser = argparse.ArgumentParser(description="Generate a custom US holidays iCal file.")
-        parser.add_argument("--year", type=int, default=datetime.now().year, help="Start year for the calendar (default: current year)")
-        parser.add_argument("--end-year", type=int, default=None, help="End year for the calendar (default: start year + default range)")
+        parser = argparse.ArgumentParser(
+            description="Generate a custom US holidays iCal file."
+        )
+        parser.add_argument(
+            "--year",
+            type=int,
+            default=datetime.now().year,
+            help="Start year for the calendar (default: current year)",
+        )
+        parser.add_argument(
+            "--end-year",
+            type=int,
+            default=None,
+            help="End year for the calendar (default: start year + default range)",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Log holidays without writing the iCal file",
+        )
         args = parser.parse_args()
         start_year = args.year
         end_year = args.end_year if args.end_year else start_year + DEFAULT_YEAR_RANGE
 
-        generate_calendar(start_year, end_year)
+        generate_calendar(start_year, end_year, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
