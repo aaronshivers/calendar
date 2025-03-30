@@ -1,0 +1,5 @@
+{
+    "output_file": "us_holidays.ics",
+    "cache_file": "holiday_cache.pkl",
+    "default_year_range": 2
+}
