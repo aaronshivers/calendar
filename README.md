@@ -87,6 +87,17 @@ The calendar includes:
 poetry run python -m unittest test_generate_calendar
 ```
 
+## Linting and Formatting
+- **Linting**: Use `flake8` to check for style issues and potential errors:
+```shell
+poetry run flake8 .
+```
+- **Formatting**: Use `black` to auto-format the code:
+```shell
+poetry run black .
+```
+- These steps are also run in the GitHub Actions workflow to ensure code quality.
+
 ## Development
 - Edit `generate_calendar.py` to modify the core logic.
 - Edit `holidays.json` to update the holiday list.
