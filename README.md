@@ -1,23 +1,23 @@
-# My Custom US Holidays Calendar
+# Custom US Holidays Calendar
 
-This project generates a custom iCal (`.ics`) file containing a curated list of US holidays, including federal holidays from the Nager.Date API and additional non-national holidays like Halloween and Festivus. It’s designed to be reusable for any year and can be subscribed to for automatic updates.
+This project generates a custom iCal (`.ics`) file containing a curated list of US holidays, including federal holidays and additional non-national holidays like Halloween and Festivus. It’s designed to be reusable for any year range and can be subscribed to for automatic updates.
 
 ## Features
-- Generates a custom `.ics` file for any specified year (defaults to current year).
-- Includes federal holidays (e.g., New Year's Day, Independence Day) from [Nager.Date API](https://date.nager.at/).
-- Adds manually defined holidays (e.g., Groundhog Day, Mother's Day) with fixed or calculated dates.
+- Generates a custom `.ics` file for a range of years (current year and next year by default).
+- Calculates federal holidays locally (e.g., New Year's Day, Independence Day) without external API dependencies.
+- Includes manually defined holidays (e.g., Groundhog Day, Mother's Day) with fixed or calculated dates from `holidays.json`.
 - Supports subscription via a hosted URL for periodic updates in calendar apps.
 
 ## Requirements
 - Python 3.13+
 - [Poetry](https://python-poetry.org/) for dependency management
-- Dependencies: `requests`, `icalendar`
+- Dependencies: `icalendar`
 
 ## Installation
 1. Clone the repository:
 ```shell
-   git clone https://github.com/yourusername/my-holiday-calendar.git
-   cd my-holiday-calendar
+git clone https://github.com/aaronshivers/calendar.git
+cd calendar
 ```
 2. Install dependencies with Poetry:
 ```shell
@@ -25,20 +25,19 @@ This project generates a custom iCal (`.ics`) file containing a curated list of 
 ```
 
 ## Usage
-- **Generate for Current Year**:
+- **Generate for Current Year and Next Year**:
 ```shell
    poetry run python generate_calendar.py
 ```
-- **Generate for Specific Year**:
+- **Generate for a Custom Year Range**:
 ```shell
-   poetry run python generate_calendar.py --year 2026
+poetry run python generate_calendar.py --year 2025 --end-year 2030
 ```
-- Output: Creates `us_holidays_{YEAR}.ics` in the project directory.
-
+- Output: Creates `us_holidays.ics` in the project directory.
 
 ## Holiday List
 The calendar includes:
-- **Federal Holidays** (from Nager.Date):
+- **Federal Holidays** (calculated locally):
   - New Year's Day
   - Martin Luther King Jr. Day
   - Presidents' Day
@@ -50,7 +49,7 @@ The calendar includes:
   - Veterans Day
   - Thanksgiving Day
   - Christmas Day
-- **Additional Holidays** (manually added):
+- **Additional Holidays** (manually added in `holidays.json`):
   - Groundhog Day (Feb 2)
   - Valentine's Day (Feb 14)
   - St. Patrick's Day (Mar 17)
@@ -63,27 +62,34 @@ The calendar includes:
   - Halloween (Oct 31)
   - Festivus (Dec 23)
 
+## Adding New Holidays
+- Edit `holidays.json` to add new holidays:
+  - **Fixed-Date Holiday**: Add to `manual_holidays` (e.g., `{"name": "National Ice Cream Day", "month": 7, "day": 21}`).
+  - **Calculated Holiday**: Add to `calculated_holidays` (e.g., `{"name": "Grandparents' Day", "type": "nth_weekday", "month": 9, "weekday": 6, "nth": 1}`).
+  - **Federal Holiday**: Add to `federal_holidays` (e.g., `{"name": "New Federal Holiday", "month": 8, "day": 15}`).
+
 ## Subscribing to the Calendar
 1. **Host the File**:
-   - Upload `us_holidays_{YEAR}.ics` to a public URL (e.g., GitHub Pages: `https://yourusername.github.io/my-holiday-calendar/us_holidays_2025.ics`).
+   - The calendar is hosted on GitHub Pages at `https://aaronshivers.github.io/calendar/us_holidays.ics`.
 2. **Subscribe**:
+   - **Apple Calendar (iCal)**: Use `File > New Calendar Subscription`, enter the URL, and set auto-refresh to "Every day."
    - **Google Calendar**: Add via "Other calendars > From URL."
-   - **Apple Calendar**: Use `File > New Calendar Subscription` and set auto-refresh.
    - **Outlook**: Add via "Add calendar > Subscribe from web."
-3. **Updates**: Calendar apps will refresh periodically (e.g., daily for Google, configurable in Apple Calendar).
-
+3. **Updates**: The calendar is updated monthly on the 1st via GitHub Actions. Calendar apps will refresh periodically (e.g., daily for iCal if set to "Every day").
 
 ## Automating Updates
-- **Local Cron Job**:
-```
-# Run daily at 1 AM
-0 1 * * * /path/to/poetry run python /path/to/generate_calendar.py
-```
 - **GitHub Actions**:
-See `.github/workflows/update-calendar.yml` for a monthly update workflow.
+   The calendar is regenerated monthly on the 1st and on pushes to the `master` branch. See `.github/workflows/update-calendar.yml` for details.
+
+## Testing
+- Run unit tests to verify holiday calculations:
+```shell
+poetry run python -m unittest test_generate_calendar
+```
 
 ## Development
-- Edit `generate_calendar.py` to modify the holiday list or logic.
+- Edit `generate_calendar.py` to modify the core logic.
+- Edit `holidays.json` to update the holiday list.
 - Test locally before pushing updates to the hosted file.
 
 ## License
