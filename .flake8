@@ -1,4 +1,9 @@
 [flake8]
 max-line-length = 100
-ignore = E203, W503  # Ignore some formatting rules that conflict with black
-exclude = .git,__pycache__,*.pyc
+ignore =
+    E203,  # Whitespace before ':' (ignored to avoid conflicts with black)
+    W503   # Line break before binary operator (ignored to avoid conflicts with black)
+exclude =
+    .git,
+    __pycache__,
+    *.pyc

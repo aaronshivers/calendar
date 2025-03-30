@@ -15,8 +15,9 @@ if sys.version_info < (3, 13):
     sys.exit(1)
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 # Load configuration
 def load_config() -> Dict[str, Any]:
@@ -31,10 +32,12 @@ def load_config() -> Dict[str, Any]:
         logger.error("config.json is malformed")
         sys.exit(1)
 
+
 CONFIG = load_config()
 OUTPUT_FILE: str = CONFIG["output_file"]
 CACHE_FILE: str = CONFIG["cache_file"]
 DEFAULT_YEAR_RANGE: int = CONFIG["default_year_range"]
+
 
 def load_holidays() -> Dict[str, Any]:
     """Load holiday definitions from holidays.json."""
@@ -62,11 +65,12 @@ def save_cache(cache: Dict[str, str]) -> None:
     with open(CACHE_FILE, "wb") as f:
         pickle.dump(cache, f)
 
+
 def get_easter_sunday(year: int, cache: Dict[str, str]) -> datetime_date:
     """Calculate the date of Easter Sunday for a given year."""
     cache_key = f"easter_{year}"
     if cache_key in cache:
-        return datetime.strptime(cache[cache_key], '%Y-%m-%d').date()
+        return datetime.strptime(cache[cache_key], "%Y-%m-%d").date()
 
     a = year % 19
     b = year // 100
@@ -83,8 +87,9 @@ def get_easter_sunday(year: int, cache: Dict[str, str]) -> datetime_date:
     month = (h + l - 7 * m + 114) // 31
     day = ((h + l - 7 * m + 114) % 31) + 1
     date = datetime(year, month, day).date()
-    cache[cache_key] = date.strftime('%Y-%m-%d')
+    cache[cache_key] = date.strftime("%Y-%m-%d")
     return date
+
 
 def get_nth_weekday(year: int, month: int, weekday: int, nth: int) -> datetime_date:
     """Calculate the nth weekday of a month (e.g., 3rd Monday in January)."""
@@ -100,13 +105,14 @@ def get_last_weekday(year: int, month: int, weekday: int) -> datetime_date:
     days_to_subtract = (last_day.weekday() - weekday + 7) % 7
     return last_day - timedelta(days=days_to_subtract)
 
+
 def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
     """Adjust holiday date for observance (e.g., if on Saturday, observe on Friday)."""
-    date = datetime.strptime(holiday_date, '%Y-%m-%d').date()
+    date = datetime.strptime(holiday_date, "%Y-%m-%d").date()
     if date.weekday() == 5:  # Saturday
-        return (date - timedelta(days=1)).strftime('%Y-%m-%d')
+        return (date - timedelta(days=1)).strftime("%Y-%m-%d")
     elif date.weekday() == 6:  # Sunday
-        return (date + timedelta(days=1)).strftime('%Y-%m-%d')
+        return (date + timedelta(days=1)).strftime("%Y-%m-%d")
     return holiday_date
 
 def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> List[Dict[str, str]]:
@@ -121,7 +127,7 @@ def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> L
             date = get_nth_weekday(year, holiday["month"], holiday["weekday"], holiday["nth"])
         holidays.append({
             "name": holiday["name"],
-            "date": date.strftime('%Y-%m-%d')
+            "date": date.strftime("%Y-%m-%d")
         })
     return holidays
 
@@ -155,7 +161,7 @@ def generate_calendar(start_year: int, end_year: int) -> None:
                 date = get_nth_weekday(YEAR, holiday["month"], holiday["weekday"], holiday["nth"])
             calculated_holidays_with_year.append({
                 "name": holiday["name"],
-                "date": date.strftime('%Y-%m-%d')
+                "date": date.strftime("%Y-%m-%d")
             })
 
         # Convert manual holidays to full dates for the year
@@ -175,8 +181,8 @@ def generate_calendar(start_year: int, end_year: int) -> None:
 
     # Create iCal calendar
     cal = Calendar()
-    cal.add('prodid', '-//My Custom US Holidays//jetify.dev//')
-    cal.add('version', '2.0')
+    cal.add("prodid", "-//Aaron Shivers//calendar.aaronshivers.com//")
+    cal.add("version", "2.0")
 
     # Filter and add holidays, avoiding duplicates
     for holiday in holidays:
@@ -196,9 +202,9 @@ def generate_calendar(start_year: int, end_year: int) -> None:
 
         if holiday_name in APPROVED_HOLIDAYS:
             event = Event()
-            event.add('summary', holiday_name)
-            event.add('dtstart', datetime.strptime(holiday_date, '%Y-%m-%d').date())
-            event.add('uid', f"{holiday_date}-{holiday_name}@mycalendar")
+            event.add("summary", holiday_name)
+            event.add("dtstart", datetime.strptime(holiday_date, "%Y-%m-%d").date())
+            event.add("uid", f"{holiday_date}-{holiday_name}@mycalendar")
             cal.add_component(event)
             logger.info(f"Added: {holiday_name} on {holiday_date}")
 
@@ -214,9 +220,9 @@ def cli():
 
 
 @cli.command()
-@click.argument('name')
-@click.argument('month', type=int)
-@click.argument('day', type=int)
+@click.argument("name")
+@click.argument("month", type=int)
+@click.argument("day", type=int)
 def add_holiday(name: str, month: int, day: int) -> None:
     """Add a new manual holiday to holidays.json."""
     holiday_config = load_holidays()
@@ -229,7 +235,7 @@ def add_holiday(name: str, month: int, day: int) -> None:
 
 
 @cli.command()
-@click.argument('name')
+@click.argument("name")
 def remove_holiday(name: str) -> None:
     """Remove a holiday from holidays.json."""
     holiday_config = load_holidays()
@@ -241,10 +247,11 @@ def remove_holiday(name: str) -> None:
         json.dump(holiday_config, f, indent=2)
     logger.info(f"Removed holiday: {name}")
 
+
 def main() -> None:
     """Main function to generate the calendar or run CLI commands."""
     # Check if we're running a CLI command
-    if len(sys.argv) > 1 and sys.argv[1] in ['add-holiday', 'remove-holiday']:
+    if len(sys.argv) > 1 and sys.argv[1] in ["add-holiday", "remove-holiday"]:
         cli()
     else:
         # Parse command-line arguments for calendar generation
@@ -256,6 +263,7 @@ def main() -> None:
         end_year = args.end_year if args.end_year else start_year + DEFAULT_YEAR_RANGE
 
         generate_calendar(start_year, end_year)
+
 
 if __name__ == "__main__":
     main()
