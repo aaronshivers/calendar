@@ -117,6 +117,13 @@ poetry run python generate_calendar.py remove-holiday "National Pizza Day"
 ## Documentation
 - Documentation is generated using `pydoc` and available as `generate_calendar.html` in the repository.
 
+## Configuration
+- The script uses `config.json` to configure runtime options:
+  - `output_file`: The name of the generated iCal file (default: `us_holidays.ics`).
+  - `cache_file`: The name of the cache file (default: `holiday_cache.pkl`).
+  - `default_year_range`: The default number of years to generate if `--end-year` is not specified (default: 2).
+- Edit `config.json` to customize these settings.
+
 ## Development
 - Edit `generate_calendar.py` to modify the core logic.
 - Edit `holidays.json` to update the holiday list.
