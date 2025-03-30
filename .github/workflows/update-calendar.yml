@@ -1,7 +1,7 @@
 name: Update Holiday Calendar
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 0 1 * *'  # Runs on the 1st of each month at midnight UTC
   push:
     branches:
       - master  # Runs on pushes to the master branch
