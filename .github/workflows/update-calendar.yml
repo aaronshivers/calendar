@@ -4,11 +4,10 @@ on:
     - cron: '0 0 1 * *'  # Runs on the 1st of each month at midnight UTC
   push:
     branches:
-      - master  # Runs on pushes to the master branch
+      - master
   pull_request:
     branches:
-      - master  # Runs on pull requests targeting the master branch
-
+      - master
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,14 +20,24 @@ jobs:
     - name: Install Poetry
       run: pip install poetry
     - name: Install dependencies
-      run: poetry install
+      run: poetry install --with dev
+    - name: Run linting with flake8
+      run: poetry run flake8 .
+    - name: Run formatting check with black
+      run: poetry run black --check .
+    - name: Run tests
+      run: poetry run python -m unittest test_generate_calendar
     - name: Generate iCal
       run: poetry run python generate_calendar.py
     - name: Commit and push changes
-      if: github.event_name != 'pull_request'  # Only commit on schedule or push, not PR
+      if: github.event_name != 'pull_request'
       run: |
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add us_holidays.ics
-        git commit -m "Update calendar for $(date +%Y)" || echo "No changes to commit"
-        git push
+          if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update calendar for $(date +%Y)"
+          git push
+        fi
