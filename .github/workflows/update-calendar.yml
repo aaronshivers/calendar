@@ -1,0 +1,27 @@
+# .github/workflows/update-calendar.yml
+name: Update Holiday Calendar
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # Runs monthly on the 1st at midnight UTC
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+    - name: Install Poetry
+      run: pip install poetry
+    - name: Install dependencies
+      run: poetry install
+    - name: Generate iCal
+      run: poetry run python generate_calendar.py
+    - name: Commit and push changes
+      run: |
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add us_holidays_*.ics
+        git commit -m "Update calendar for $(date +%Y)"
+        git push
