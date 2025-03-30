@@ -2,9 +2,17 @@ import json
 import logging
 import pickle
 import os
+import sys
+from typing import Dict, List, Tuple, Any
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
 import argparse
+import click
+
+# Ensure Python version is 3.13 or higher
+if sys.version_info < (3, 13):
+    print("This script requires Python 3.13 or higher.")
+    sys.exit(1)
 
 # Set up logging
 logging.basicConfig(
@@ -13,38 +21,38 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Cache file for calculated dates
-CACHE_FILE = "holiday_cache.pkl"
+CACHE_FILE: str = "holiday_cache.pkl"
 
 
-# Load holiday definitions from JSON
-def load_holidays():
+def load_holidays() -> Dict[str, Any]:
+    """Load holiday definitions from holidays.json."""
     try:
         with open("holidays.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
         logger.error("holidays.json not found")
-        exit(1)
+        sys.exit(1)
     except json.JSONDecodeError:
         logger.error("holidays.json is malformed")
-        exit(1)
+        sys.exit(1)
 
 
-# Load cached dates if available
-def load_cache():
+def load_cache() -> Dict[str, str]:
+    """Load cached holiday dates from a pickle file."""
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "rb") as f:
             return pickle.load(f)
     return {}
 
 
-# Save calculated dates to cache
-def save_cache(cache):
+def save_cache(cache: Dict[str, str]) -> None:
+    """Save calculated holiday dates to a pickle file."""
     with open(CACHE_FILE, "wb") as f:
         pickle.dump(cache, f)
 
 
-# Function to calculate Easter Sunday
-def get_easter_sunday(year, cache):
+def get_easter_sunday(year: int, cache: Dict[str, str]) -> datetime.date:
+    """Calculate the date of Easter Sunday for a given year."""
     cache_key = f"easter_{year}"
     if cache_key in cache:
         return datetime.strptime(cache[cache_key], "%Y-%m-%d").date()
@@ -68,26 +76,24 @@ def get_easter_sunday(year, cache):
     return date
 
 
-# Function to calculate nth weekday (e.g., 3rd Monday in January)
-def get_nth_weekday(year, month, weekday, nth):
+def get_nth_weekday(year: int, month: int, weekday: int, nth: int) -> datetime.date:
+    """Calculate the nth weekday of a month (e.g., 3rd Monday in January)."""
     first_day = datetime(year, month, 1).date()
     first_weekday = first_day + timedelta(days=(weekday - first_day.weekday() + 7) % 7)
     return first_weekday + timedelta(weeks=nth - 1)
 
 
-# Function to calculate last weekday of a month (e.g., last Monday in May)
-def get_last_weekday(year, month, weekday):
-    # Start from the last day of the month
+def get_last_weekday(year: int, month: int, weekday: int) -> datetime.date:
+    """Calculate the last weekday of a month (e.g., last Monday in May)."""
     next_month = month % 12 + 1
     next_year = year if next_month != 1 else year + 1
     last_day = datetime(next_year, next_month, 1).date() - timedelta(days=1)
-    # Find the last occurrence of the weekday
     days_to_subtract = (last_day.weekday() - weekday + 7) % 7
     return last_day - timedelta(days=days_to_subtract)
 
 
-# Adjust holiday date for observance (e.g., if on Saturday, observe on Friday; if on Sunday, observe on Monday)
-def adjust_for_observance(holiday_date, holiday_name):
+def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
+    """Adjust holiday date for observance (e.g., if on Saturday, observe on Friday)."""
     date = datetime.strptime(holiday_date, "%Y-%m-%d").date()
     if date.weekday() == 5:  # Saturday
         return (date - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -96,8 +102,10 @@ def adjust_for_observance(holiday_date, holiday_name):
     return holiday_date
 
 
-# Calculate federal holidays
-def get_federal_holidays(year, federal_holidays):
+def get_federal_holidays(
+    year: int, federal_holidays: List[Dict[str, Any]]
+) -> List[Dict[str, str]]:
+    """Calculate federal holidays for a given year."""
     holidays = []
     for holiday in federal_holidays:
         if "day" in holiday:
@@ -112,7 +120,8 @@ def get_federal_holidays(year, federal_holidays):
     return holidays
 
 
-def generate_calendar(start_year, end_year):
+def generate_calendar(start_year: int, end_year: int) -> None:
+    """Generate an iCal file with holidays for the specified year range."""
     # Load holidays
     holiday_config = load_holidays()
     APPROVED_HOLIDAYS = holiday_config["approved_holidays"]
@@ -124,7 +133,8 @@ def generate_calendar(start_year, end_year):
     cache = load_cache()
 
     # Generate holidays for a range of years
-    holidays = []
+    holidays: List[Dict[str, str]] = []
+    seen: set[Tuple[str, str]] = set()  # Track (name, date) to avoid duplicates
     logger.info(f"Generating holidays for years {start_year} to {end_year}")
     for YEAR in range(start_year, end_year + 1):
         # Calculate federal holidays
@@ -165,7 +175,7 @@ def generate_calendar(start_year, end_year):
     cal.add("prodid", "-//My Custom US Holidays//jetify.dev//")
     cal.add("version", "2.0")
 
-    # Filter and add holidays
+    # Filter and add holidays, avoiding duplicates
     for holiday in holidays:
         holiday_name = holiday["name"]
         holiday_date = holiday["date"]
@@ -178,6 +188,13 @@ def generate_calendar(start_year, end_year):
             "Christmas Day",
         ]:
             holiday_date = adjust_for_observance(holiday_date, holiday_name)
+
+        # Skip duplicates
+        holiday_key = (holiday_name, holiday_date)
+        if holiday_key in seen:
+            logger.warning(f"Skipping duplicate: {holiday_name} on {holiday_date}")
+            continue
+        seen.add(holiday_key)
 
         if holiday_name in APPROVED_HOLIDAYS:
             event = Event()
@@ -193,28 +210,76 @@ def generate_calendar(start_year, end_year):
     logger.info("Calendar saved as 'us_holidays.ics'")
 
 
-def main():
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(
-        description="Generate a custom US holidays iCal file."
-    )
-    parser.add_argument(
-        "--year",
-        type=int,
-        default=datetime.now().year,
-        help="Start year for the calendar (default: current year)",
-    )
-    parser.add_argument(
-        "--end-year",
-        type=int,
-        default=None,
-        help="End year for the calendar (default: start year + 1)",
-    )
-    args = parser.parse_args()
-    start_year = args.year
-    end_year = args.end_year if args.end_year else start_year + 1
+@click.group()
+def cli():
+    """CLI for managing holidays in holidays.json."""
+    pass
 
-    generate_calendar(start_year, end_year)
+
+@cli.command()
+@click.argument("name")
+@click.argument("month", type=int)
+@click.argument("day", type=int)
+def add_holiday(name: str, month: int, day: int) -> None:
+    """Add a new manual holiday to holidays.json."""
+    holiday_config = load_holidays()
+    new_holiday = {"name": name, "month": month, "day": day}
+    holiday_config["manual_holidays"].append(new_holiday)
+    holiday_config["approved_holidays"].append(name)
+    with open("holidays.json", "w") as f:
+        json.dump(holiday_config, f, indent=2)
+    logger.info(f"Added holiday: {name} on {month:02d}-{day:02d}")
+
+
+@cli.command()
+@click.argument("name")
+def remove_holiday(name: str) -> None:
+    """Remove a holiday from holidays.json."""
+    holiday_config = load_holidays()
+    holiday_config["manual_holidays"] = [
+        h for h in holiday_config["manual_holidays"] if h["name"] != name
+    ]
+    holiday_config["calculated_holidays"] = [
+        h for h in holiday_config["calculated_holidays"] if h["name"] != name
+    ]
+    holiday_config["federal_holidays"] = [
+        h for h in holiday_config["federal_holidays"] if h["name"] != name
+    ]
+    holiday_config["approved_holidays"] = [
+        h for h in holiday_config["approved_holidays"] if h != name
+    ]
+    with open("holidays.json", "w") as f:
+        json.dump(holiday_config, f, indent=2)
+    logger.info(f"Removed holiday: {name}")
+
+
+def main():
+    """Main function to generate the calendar or run CLI commands."""
+    # Check if we're running a CLI command
+    if len(sys.argv) > 1 and sys.argv[1] in ["add-holiday", "remove-holiday"]:
+        cli()
+    else:
+        # Parse command-line arguments for calendar generation
+        parser = argparse.ArgumentParser(
+            description="Generate a custom US holidays iCal file."
+        )
+        parser.add_argument(
+            "--year",
+            type=int,
+            default=datetime.now().year,
+            help="Start year for the calendar (default: current year)",
+        )
+        parser.add_argument(
+            "--end-year",
+            type=int,
+            default=None,
+            help="End year for the calendar (default: start year + 1)",
+        )
+        args = parser.parse_args()
+        start_year = args.year
+        end_year = args.end_year if args.end_year else start_year + 1
+
+        generate_calendar(start_year, end_year)
 
 
 if __name__ == "__main__":

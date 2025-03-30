@@ -1,7 +1,7 @@
 name: Update Holiday Calendar
 on:
   schedule:
-    - cron: '0 0 1 * *'  # Runs on the 1st of each month at midnight UTC
+    - cron: '0 0 1 * *'
   push:
     branches:
       - master
@@ -25,19 +25,23 @@ jobs:
       run: poetry run flake8 .
     - name: Run formatting check with black
       run: poetry run black --check .
+    - name: Run type checking with mypy
+      run: poetry run mypy .
     - name: Run tests
       run: poetry run python -m unittest test_generate_calendar
     - name: Generate iCal
       run: poetry run python generate_calendar.py
+    - name: Generate documentation
+      run: poetry run pydoc -w generate_calendar
     - name: Commit and push changes
       if: github.event_name != 'pull_request'
       run: |
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
-        git add us_holidays.ics
+        git add us_holidays.ics generate_calendar.html
           if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Update calendar for $(date +%Y)"
+          git commit -m "Update calendar and docs for $(date +%Y)"
           git push
         fi
