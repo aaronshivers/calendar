@@ -37,5 +37,18 @@
       {"name": "Easter Sunday", "type": "easter"},
       {"name": "Mother's Day", "type": "nth_weekday", "month": 5, "weekday": 6, "nth": 2},
       {"name": "Father's Day", "type": "nth_weekday", "month": 6, "weekday": 6, "nth": 3}
+  ],
+  "federal_holidays": [
+    {"name": "New Year's Day", "month": 1, "day": 1},
+    {"name": "Martin Luther King Jr. Day", "month": 1, "weekday": 0, "nth": 3},
+    {"name": "Presidents' Day", "month": 2, "weekday": 0, "nth": 3},
+    {"name": "Memorial Day", "month": 5, "weekday": 0, "last": true},
+    {"name": "Juneteenth", "month": 6, "day": 19},
+    {"name": "Independence Day", "month": 7, "day": 4},
+    {"name": "Labor Day", "month": 9, "weekday": 0, "nth": 1},
+    {"name": "Columbus Day", "month": 10, "weekday": 0, "nth": 2},
+    {"name": "Veterans Day", "month": 11, "day": 11},
+    {"name": "Thanksgiving Day", "month": 11, "weekday": 3, "nth": 4},
+    {"name": "Christmas Day", "month": 12, "day": 25}
     ]
   }

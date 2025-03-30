@@ -17,6 +17,7 @@ with open("holidays.json", "r") as f:
 APPROVED_HOLIDAYS = holiday_config["approved_holidays"]
 MANUAL_HOLIDAYS = holiday_config["manual_holidays"]
 CALCULATED_HOLIDAYS = holiday_config["calculated_holidays"]
+FEDERAL_HOLIDAYS = holiday_config["federal_holidays"]
 
 # Function to calculate Easter Sunday
 def get_easter_sunday(year):
@@ -53,21 +54,7 @@ def get_last_weekday(year, month, weekday):
     return last_day - timedelta(days=days_to_subtract)
 
 # Calculate federal holidays
-def get_federal_holidays(year):
-    federal_holidays = [
-        {"name": "New Year's Day", "month": 1, "day": 1},
-        {"name": "Martin Luther King Jr. Day", "month": 1, "weekday": 0, "nth": 3},  # 3rd Monday
-        {"name": "Presidents' Day", "month": 2, "weekday": 0, "nth": 3},  # 3rd Monday
-        {"name": "Memorial Day", "month": 5, "weekday": 0, "last": True},  # Last Monday
-        {"name": "Juneteenth", "month": 6, "day": 19},
-        {"name": "Independence Day", "month": 7, "day": 4},
-        {"name": "Labor Day", "month": 9, "weekday": 0, "nth": 1},  # 1st Monday
-        {"name": "Columbus Day", "month": 10, "weekday": 0, "nth": 2},  # 2nd Monday
-        {"name": "Veterans Day", "month": 11, "day": 11},
-        {"name": "Thanksgiving Day", "month": 11, "weekday": 3, "nth": 4},  # 4th Thursday
-        {"name": "Christmas Day", "month": 12, "day": 25}
-    ]
-
+def get_federal_holidays(year, federal_holidays):
     holidays = []
     for holiday in federal_holidays:
         if "day" in holiday:
@@ -86,7 +73,7 @@ def get_federal_holidays(year):
 holidays = []
 for YEAR in range(START_YEAR, END_YEAR + 1):
     # Calculate federal holidays
-    year_holidays = get_federal_holidays(YEAR)
+    year_holidays = get_federal_holidays(YEAR, FEDERAL_HOLIDAYS)
 
     # Calculate variable holidays (e.g., Easter, Mother's Day)
     calculated_holidays_with_year = []
@@ -132,6 +119,6 @@ for holiday in holidays:
         print(f"Added: {holiday_name} on {holiday_date}")
 
 # Save the iCal file
-with open(f"us_holidays_{START_YEAR}_to_{END_YEAR}.ics", "wb") as f:
+with open("us_holidays.ics", "wb") as f:
     f.write(cal.to_ical())
-print(f"Calendar saved as 'us_holidays_{START_YEAR}_to_{END_YEAR}.ics'")
+print("Calendar saved as 'us_holidays.ics'")
