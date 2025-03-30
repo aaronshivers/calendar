@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+holiday_cache.pkl
+us_holidays.ics
+.venv/
