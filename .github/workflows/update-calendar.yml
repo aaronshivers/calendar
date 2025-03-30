@@ -1,8 +1,14 @@
-# .github/workflows/update-calendar.yml
 name: Update Holiday Calendar
 on:
   schedule:
-    - cron: '0 0 1 * *'  # Runs monthly on the 1st at midnight UTC
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  push:
+    branches:
+      - main  # Runs on pushes to the main branch
+  pull_request:
+    branches:
+      - main  # Runs on pull requests targeting the main branch
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,9 +25,10 @@ jobs:
     - name: Generate iCal
       run: poetry run python generate_calendar.py
     - name: Commit and push changes
+      if: github.event_name != 'pull_request'  # Only commit on schedule or push, not PR
       run: |
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
-        git add us_holidays_*.ics
-        git commit -m "Update calendar for $(date +%Y)"
+        git add us_holidays.ics
+        git commit -m "Update calendar for $(date +%Y)" || echo "No changes to commit"
         git push
