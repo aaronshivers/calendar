@@ -4,10 +4,10 @@ on:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
   push:
     branches:
-      - main  # Runs on pushes to the main branch
+      - master  # Runs on pushes to the master branch
   pull_request:
     branches:
-      - main  # Runs on pull requests targeting the main branch
+      - master  # Runs on pull requests targeting the master branch
 
 jobs:
   build:
