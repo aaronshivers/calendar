@@ -1,0 +1,41 @@
+{
+    "approved_holidays": [
+      "New Year's Day",
+      "Groundhog Day",
+      "Valentine's Day",
+      "St. Patrick's Day",
+      "April Fool's Day",
+      "Easter Sunday",
+      "Earth Day",
+      "Cinco de Mayo",
+      "Mother's Day",
+      "Father's Day",
+      "Labor Day",
+      "Martin Luther King Jr. Day",
+      "Presidents' Day",
+      "Memorial Day",
+      "Juneteenth",
+      "Independence Day",
+      "Columbus Day",
+      "Veterans Day",
+      "Halloween",
+      "Thanksgiving Day",
+      "Festivus",
+      "Christmas Day"
+    ],
+    "manual_holidays": [
+      {"name": "Groundhog Day", "month": 2, "day": 2},
+      {"name": "Valentine's Day", "month": 2, "day": 14},
+      {"name": "St. Patrick's Day", "month": 3, "day": 17},
+      {"name": "April Fool's Day", "month": 4, "day": 1},
+      {"name": "Earth Day", "month": 4, "day": 22},
+      {"name": "Cinco de Mayo", "month": 5, "day": 5},
+      {"name": "Halloween", "month": 10, "day": 31},
+      {"name": "Festivus", "month": 12, "day": 23}
+    ],
+    "calculated_holidays": [
+      {"name": "Easter Sunday", "type": "easter"},
+      {"name": "Mother's Day", "type": "nth_weekday", "month": 5, "weekday": 6, "nth": 2},
+      {"name": "Father's Day", "type": "nth_weekday", "month": 6, "weekday": 6, "nth": 3}
+    ]
+  }
