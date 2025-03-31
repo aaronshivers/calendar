@@ -1,0 +1,48 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Update poetry lock file
+        run: poetry lock
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Format code with black
+        run: poetry run black .
+
+      - name: Check formatting with black
+        run: poetry run black --check .
+
+      - name: Run linting with flake8
+        run: poetry run flake8 .
+
+      - name: Run type checking with mypy
+        run: poetry run mypy .
+
+      - name: Run tests with coverage
+        run: poetry run coverage run -m unittest tests.test_generate_calendar
+
+      - name: Generate coverage report
+        run: poetry run coverage report
+
+      - name: Check coverage threshold
+        run: poetry run coverage report --fail-under=70
