@@ -22,11 +22,11 @@
         "Thanksgiving Day",
         "Festivus",
         "Christmas Day",
-        "Test Holiday",
-        "Test Holiday",
-        "Test Holiday",
-        "Test Holiday",
-        "Test Holiday"
+        "Test Detailed Holiday",
+        "Test Detailed Holiday",
+        "Test Detailed Holiday",
+        "Test Detailed Holiday",
+        "Test Detailed Holiday"
     ],
     "manual_holidays": [
         {
@@ -73,6 +73,33 @@
             "name": "Festivus",
             "month": 12,
             "day": 23
+        },
+        {
+            "name": "Test Detailed Holiday",
+            "month": 12,
+            "day": 2,
+            "description": "Test description",
+            "reminder_days": 1
+        },
+        {
+            "name": "Test Detailed Holiday",
+            "month": 12,
+            "day": 2
+        },
+        {
+            "name": "Test Detailed Holiday",
+            "month": 12,
+            "day": 2
+        },
+        {
+            "name": "Test Detailed Holiday",
+            "month": 12,
+            "day": 2
+        },
+        {
+            "name": "Test Detailed Holiday",
+            "month": 12,
+            "day": 2
         }
     ],
     "calculated_holidays": [
