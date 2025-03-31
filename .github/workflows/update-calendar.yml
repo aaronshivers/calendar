@@ -12,36 +12,45 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.13'
-    - name: Install Poetry
-      run: pip install poetry
-    - name: Install dependencies
-      run: poetry install --with dev
-    - name: Run linting with flake8
-      run: poetry run flake8 .
-    - name: Run formatting check with black
-      run: poetry run black --check .
-    - name: Run type checking with mypy
-      run: poetry run mypy .
-    - name: Run tests
-      run: poetry run python -m unittest ./tests/test_generate_calendar
-    - name: Generate iCal
-      run: poetry run python generate_calendar.py
-    - name: Generate documentation
-      run: poetry run pydoc -w generate_calendar
-    - name: Commit and push changes
-      if: github.event_name != 'pull_request'
-      run: |
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
-        git add us_holidays.ics generate_calendar.html
-          if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Update calendar and docs for $(date +%Y)"
-          git push
-        fi
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Format code with black
+        run: poetry run black .
+
+      - name: Check formatting with black
+        run: poetry run black --check .
+
+      - name: Run linting with flake8
+        run: poetry run flake8 .
+
+      - name: Run type checking with mypy
+        run: poetry run mypy .
+
+      - name: Run tests with coverage
+        run: poetry run coverage run -m unittest discover -s tests
+
+      - name: Generate coverage report
+        run: poetry run coverage report
+
+      - name: Generate calendar
+        run: poetry run python src/generate_calendar.py
+
+      - name: Commit and push changes
+        run: |
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add us_holidays.ics
+            git commit -m "Update calendar file" || echo "No changes to commit"
+            git push origin master

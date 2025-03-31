@@ -4,7 +4,7 @@ import pickle
 import os
 import sys
 from typing import Dict, List, Tuple, Any
-from datetime import datetime, timedelta, date as datetime_date
+from datetime import datetime, date as datetime_date, timedelta
 from icalendar import Calendar, Event
 import argparse
 import click
