@@ -3,11 +3,11 @@ import unittest
 from datetime import datetime
 import logging
 import json
+from generate_calendar import get_easter_sunday, get_nth_weekday, get_last_weekday, load_cache, get_federal_holidays, main
+
 
 # Add src/ to the Python path to import generate_calendar
 sys.path.insert(0, "/Users/aaron/repos/calendar/src")
-
-from generate_calendar import get_easter_sunday, get_nth_weekday, get_last_weekday, load_cache, get_federal_holidays, main
 
 
 class TestHolidayCalculations(unittest.TestCase):
