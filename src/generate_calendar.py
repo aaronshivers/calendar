@@ -28,7 +28,7 @@ def load_config() -> Dict[str, Any]:
     except FileNotFoundError:
         logger.error("config/config.json not found")
         sys.exit(1)
-    except json.JsonDecodeError:
+    except json.JSONDecodeError:
         logger.error("config/config.json is malformed")
         sys.exit(1)
 
@@ -47,7 +47,7 @@ def load_holidays() -> Dict[str, Any]:
     except FileNotFoundError:
         logger.error("src/holidays.json not found")
         sys.exit(1)
-    except json.JsonDecodeError:
+    except json.JSONDecodeError:
         logger.error("src/holidays.json is malformed")
         sys.exit(1)
 
@@ -94,26 +94,26 @@ def get_easter_sunday(year: int, cache: Dict[str, str]) -> datetime_date:
 def get_nth_weekday(year: int, month: int, weekday: int, nth: int) -> datetime_date:
     """Calculate the nth weekday of a month (e.g., 3rd Monday in January)."""
     first_day = datetime(year, month, 1).date()
-    first_weekday = first_day + datetime.timedelta(days=(weekday - first_day.weekday() + 7) % 7)
-    return first_weekday + datetime.timedelta(weeks=nth - 1)
+    first_weekday = first_day + timedelta(days=(weekday - first_day.weekday() + 7) % 7)
+    return first_weekday + timedelta(weeks=nth - 1)
 
 
 def get_last_weekday(year: int, month: int, weekday: int) -> datetime_date:
     """Calculate the last weekday of a month (e.g., last Monday in May)."""
     next_month = month % 12 + 1
     next_year = year if next_month != 1 else year + 1
-    last_day = datetime(next_year, next_month, 1).date() - datetime.timedelta(days=1)
+    last_day = datetime(next_year, next_month, 1).date() - timedelta(days=1)
     days_to_subtract = (last_day.weekday() - weekday + 7) % 7
-    return last_day - datetime.timedelta(days=days_to_subtract)
+    return last_day - timedelta(days=days_to_subtract)
 
 
 def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
     """Adjust holiday date for observance (e.g., if on Saturday, observe on Friday)."""
     date = datetime.strptime(holiday_date, "%Y-%m-%d").date()
     if date.weekday() == 5:  # Saturday
-        return (date - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        return (date - timedelta(days=1)).strftime("%Y-%m-%d")
     elif date.weekday() == 6:  # Sunday
-        return (date + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        return (date + timedelta(days=1)).strftime("%Y-%m-%d")
     return holiday_date
 
 
