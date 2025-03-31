@@ -1,5 +1,7 @@
 # US Holidays Calendar
 
+[![Update Calendar](https://github.com/aaronshivers/calendar/actions/workflows/update-calendar.yml/badge.svg)](https://github.com/aaronshivers/calendar/actions/workflows/update-calendar.yml)
+
 This project generates a custom iCal (`.ics`) file containing a curated list of US holidays, including federal holidays and additional non-national holidays like Halloween and Festivus. It’s designed to be reusable for any year range and can be subscribed to for automatic updates.
 
 ## Features

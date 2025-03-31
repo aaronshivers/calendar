@@ -18,6 +18,7 @@ black = "^25.0"
 mypy = "^1.15"
 coverage = "^7.0"
 types-icalendar = "^6.0"  # Add type stubs for icalendar
+pre-commit = "^4.2.0"
 
 [tool.poetry.scripts]
 generate_calendar = "generate_calendar:main"

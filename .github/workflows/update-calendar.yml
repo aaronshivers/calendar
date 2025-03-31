@@ -10,12 +10,18 @@ on:
     branches:
       - master
 
+concurrency:
+  group: calendar-update
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,11 +31,20 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
-      - name: Update poetry lock file
-        run: poetry lock
+      - name: Set up cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         run: poetry install
+
+      - name: Install pre-commit hooks
+        run: poetry run pre-commit install
+    
+      - name: Run pre-commit checks
+        run: poetry run pre-commit run --all-files
 
       - name: Format code with black
         run: poetry run black .
