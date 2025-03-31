@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from src.generate_calendar import (
+from generate_calendar import (
     get_easter_sunday,
     get_nth_weekday,
     get_last_weekday,

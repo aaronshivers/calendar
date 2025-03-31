@@ -1,5 +1,5 @@
 from flask import Flask, send_file
-from src.generate_calendar import generate_calendar
+from generate_calendar import generate_calendar
 
 app = Flask(__name__)
 

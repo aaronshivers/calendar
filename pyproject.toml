@@ -1,8 +1,9 @@
 [tool.poetry]
-name = "us-holidays-calendars"
+name = "calendar"
 version = "0.1.0"
 description = "Generate a custom US holidays iCal file"
 authors = ["Your Name <your@email.com>"]
+packages = [{include = "generate_calendar", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.13"
@@ -17,7 +18,7 @@ mypy = "^0.990"
 coverage = "^6.0"
 
 [tool.poetry.scripts]
-generate_calendar = "src.generate_calendar:main"
+generate_calendar = "generate_calendar:main"
 
 [tool.black]
 line-length = 100

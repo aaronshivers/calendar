@@ -24,7 +24,8 @@ def load_config() -> Dict[str, Any]:
     """Load configuration from config/config.json."""
     try:
         with open("config/config.json", "r") as f:
-            return json.load(f)
+            config: Dict[str, Any] = json.load(f)
+            return config
     except FileNotFoundError:
         logger.error("config/config.json not found")
         sys.exit(1)
@@ -43,7 +44,8 @@ def load_holidays() -> Dict[str, Any]:
     """Load holiday definitions from src/holidays.json."""
     try:
         with open("src/holidays.json", "r") as f:
-            return json.load(f)
+            holidays: Dict[str, Any] = json.load(f)
+            return holidays
     except FileNotFoundError:
         logger.error("src/holidays.json not found")
         sys.exit(1)
@@ -56,7 +58,8 @@ def load_cache() -> Dict[str, str]:
     """Load cached holiday dates from a pickle file."""
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "rb") as f:
-            return pickle.load(f)
+            cache: Dict[str, str] = pickle.load(f)
+            return cache
     return {}
 
 
@@ -234,7 +237,7 @@ def generate_calendar(
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """CLI for managing holidays in holidays.json."""
     pass
 
