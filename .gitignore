@@ -4,4 +4,4 @@ holiday_cache.pkl
 us_holidays.ics
 .venv/
 .vscode/
-.idea/
+.idea/.coverage
