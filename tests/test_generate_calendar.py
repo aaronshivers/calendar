@@ -95,22 +95,24 @@ class TestHolidayCalculations(unittest.TestCase):
 
     def test_add_holiday_valid(self):
         # Test adding a valid holiday
-        sys.argv = ["generate_calendar", "add-holiday", "Test Holiday", "2025-12-01"]
-        main()
+        sys.argv = ["generate_calendar", "add-holiday", "Test Holiday", "12", "1"]
+        with self.assertRaises(SystemExit) as cm:
+            main()
+        self.assertEqual(cm.exception.code, 0)  # Optionally check the exit code
+
         # Check if the holiday was added to holidays.json
         with open("src/holidays.json", "r") as f:
             holidays = json.load(f)
-            self.assertIn("Test Holiday", [h["name"] for h in holidays.get("custom_holidays", [])])
+            manual_holidays = holidays.get("manual_holidays", [])
+            self.assertIn("Test Holiday", [h["name"] for h in manual_holidays])
         # Clean up by removing the added holiday
-        holidays["custom_holidays"] = [
-            h for h in holidays.get("custom_holidays", []) if h["name"] != "Test Holiday"
-        ]
+        holidays["manual_holidays"] = [h for h in manual_holidays if h["name"] != "Test Holiday"]
         with open("src/holidays.json", "w") as f:
             json.dump(holidays, f, indent=4)
 
     def test_add_holiday_invalid_date(self):
         # Test adding a holiday with an invalid date
-        sys.argv = ["generate_calendar", "add-holiday", "Invalid Holiday", "2025-13-01"]
+        sys.argv = ["generate_calendar", "add-holiday", "Invalid Holiday", "13", "1"]
         with self.assertRaises(SystemExit):  # Should exit due to invalid date
             main()
 
