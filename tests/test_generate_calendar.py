@@ -89,6 +89,48 @@ class TestHolidayCalculations(unittest.TestCase):
         sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025"]
         main()
 
+def test_generate_calendar_dry_run(self):
+    from generate_calendar import main
+    import sys
+    # Test the --dry-run option
+    sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025", "--dry-run"]
+    main()  # Should not write to file, just log the holidays
+
+def test_generate_calendar_verbose(self):
+    from generate_calendar import main
+    import sys
+    import logging
+    # Test the --verbose option
+    sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025", "--verbose"]
+    # Capture logging output
+    with self.assertLogs(level=logging.DEBUG) as cm:
+        main()
+    self.assertTrue(any("DEBUG" in log for log in cm.output))
+
+def test_add_holiday_valid(self):
+    from generate_calendar import main
+    import sys
+    import os
+    # Test adding a valid holiday
+    sys.argv = ["generate_calendar", "add-holiday", "Test Holiday", "2025-12-01"]
+    main()
+    # Check if the holiday was added to holidays.json
+    with open("src/holidays.json", "r") as f:
+        import json
+        holidays = json.load(f)
+        self.assertIn("Test Holiday", [h["name"] for h in holidays.get("custom_holidays", [])])
+    # Clean up by removing the added holiday
+    holidays["custom_holidays"] = [h for h in holidays.get("custom_holidays", []) if h["name"] != "Test Holiday"]
+    with open("src/holidays.json", "w") as f:
+        json.dump(holidays, f, indent=4)
+
+def test_add_holiday_invalid_date(self):
+    from generate_calendar import main
+    import sys
+    # Test adding a holiday with an invalid date
+    sys.argv = ["generate_calendar", "add-holiday", "Invalid Holiday", "2025-13-01"]
+    with self.assertRaises(SystemExit):  # Should exit due to invalid date
+        main()
 
 if __name__ == "__main__":
     unittest.main()
