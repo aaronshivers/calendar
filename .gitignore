@@ -6,3 +6,4 @@ us_holidays.ics
 .vscode/
 .idea/.coverage
 .coverage
+htmlcov/
