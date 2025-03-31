@@ -4,7 +4,7 @@ from generate_calendar import generate_calendar
 app = Flask(__name__)
 
 
-def generate_calendar_file():
+def generate_calendar_file() -> None:
     # Assuming some default values for start_year and end_year
     start_year = 2025
     end_year = 2026

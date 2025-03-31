@@ -49,7 +49,7 @@ class TestHolidayCalculations(unittest.TestCase):
                 "poetry",
                 "run",
                 "python",
-                "src/generate_calendar.py",
+                "src/generate_calendar/__init__.py",
                 "add-holiday",
                 "Invalid",
                 "2",
