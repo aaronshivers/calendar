@@ -49,6 +49,9 @@ jobs:
       - name: Generate coverage report
         run: poetry run coverage report
 
+      - name: Check coverage threshold
+        run: poetry run coverage report --fail-under=70
+
       - name: Generate calendar
         run: poetry run python src/generate_calendar/__init__.py
 
@@ -57,6 +60,6 @@ jobs:
         run: |
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
-            git add us_holidays.ics
+            git add -f us_holidays.ics
             git commit -m "Update calendar file" || echo "No changes to commit"
             git push origin master
