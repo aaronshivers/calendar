@@ -81,6 +81,13 @@ class TestHolidayCalculations(unittest.TestCase):
             if holiday["name"] in expected_dates:
                 self.assertEqual(holiday["date"], expected_dates[holiday["name"]])
 
+    def test_generate_calendar_main(self):
+        from generate_calendar import main
+        import sys
+        # Redirect sys.argv to simulate command-line arguments
+        sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025"]
+        main()
+
 
 if __name__ == "__main__":
     unittest.main()
