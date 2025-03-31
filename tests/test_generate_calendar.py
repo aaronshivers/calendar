@@ -3,7 +3,14 @@ import unittest
 from datetime import datetime
 import logging
 import json
-from generate_calendar import get_easter_sunday, get_nth_weekday, get_last_weekday, load_cache, get_federal_holidays, main
+from generate_calendar import (
+    get_easter_sunday,
+    get_nth_weekday,
+    get_last_weekday,
+    load_cache,
+    get_federal_holidays,
+    main,
+)
 
 
 # Add src/ to the Python path to import generate_calendar
