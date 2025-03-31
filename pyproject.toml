@@ -19,7 +19,6 @@ coverage = "^7.0"
 
 [tool.poetry.scripts]
 generate_calendar = "generate_calendar:main"
-test = "bash -c 'PYTHONPATH=src python -m unittest tests.test_generate_calendar'"
 
 [tool.black]
 line-length = 100
