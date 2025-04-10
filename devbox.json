@@ -5,9 +5,9 @@
     "poetry@latest"
   ],
   "shell": {
-    "init_hook": [
-      "poetry install",
-      "poetry shell"
+  "init_hook": [
+      "poetry install --with dev",
+      "source $(poetry env info --path)/bin/activate"
     ]
   }
 }

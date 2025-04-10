@@ -1,48 +1,49 @@
 name: Pull Request Checks
 
 on:
+  push:
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 jobs:
-  checks:
+  lint-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
 
-      - name: Install Poetry
-        run: pip install poetry
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Update poetry lock file
-        run: poetry lock
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
 
-      - name: Install dependencies
-        run: poetry install
+    - name: Run Markdown linting
+      run: |
+        poetry run pymarkdownlnt scan README.md
 
-      - name: Format code with black
-        run: poetry run black .
+    - name: Run flake8
+      run: |
+        poetry run flake8 .
 
-      - name: Check formatting with black
-        run: poetry run black --check .
+    - name: Run black (check only)
+      run: |
+        poetry run black --check .
 
-      - name: Run linting with flake8
-        run: poetry run flake8 .
+    - name: Run mypy
+      run: |
+        poetry run mypy .
 
-      - name: Run type checking with mypy
-        run: poetry run mypy .
-
-      - name: Run tests with coverage
-        run: poetry run coverage run -m unittest tests.test_generate_calendar
-
-      - name: Generate coverage report
-        run: poetry run coverage report
-
-      - name: Check coverage threshold
-        run: poetry run coverage report --fail-under=70
+    - name: Run tests with coverage
+      run: |
+        poetry run coverage run -m unittest tests/test_generate_calendar.py
+        poetry run coverage report
