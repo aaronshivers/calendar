@@ -16,7 +16,6 @@ from generate_calendar import (
     save_cache,
     get_federal_holidays,
     generate_calendar,
-    main,
     cli,
 )
 
@@ -95,16 +94,19 @@ class TestHolidayCalculations(unittest.TestCase):
                 self.assertEqual(holiday["date"], expected_dates[holiday["name"]])
 
     def test_generate_calendar_main(self):
-        sys.argv = [
-            "generate_calendar",
-            "--year",
-            "2025",
-            "--end-year",
-            "2025",
-            "--holidays-file",
-            self.temp_holidays_json,
-        ]
-        main()
+        result = self.runner.invoke(
+            cli,
+            [
+                "generate",
+                "--year",
+                "2025",
+                "--end-year",
+                "2025",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
+        )
+        self.assertEqual(result.exit_code, 0)
         self.assertTrue(os.path.exists("us_holidays.ics"))
         with open("us_holidays.ics", "rb") as f:
             cal = Calendar.from_ical(f.read())
@@ -118,38 +120,64 @@ class TestHolidayCalculations(unittest.TestCase):
                     break
 
     def test_generate_calendar_dry_run(self):
-        sys.argv = [
-            "generate_calendar",
-            "--year",
-            "2025",
-            "--end-year",
-            "2025",
-            "--dry-run",
-            "--holidays-file",
-            self.temp_holidays_json,
-        ]
-        main()
+        result = self.runner.invoke(
+            cli,
+            [
+                "generate",
+                "--year",
+                "2025",
+                "--end-year",
+                "2025",
+                "--dry-run",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
+        )
+        self.assertEqual(result.exit_code, 0)
         self.assertFalse(os.path.exists("us_holidays.ics"))
 
     def test_generate_calendar_verbose(self):
-        sys.argv = [
-            "generate_calendar",
-            "--year",
-            "2025",
-            "--end-year",
-            "2025",
-            "--verbose",
-            "--holidays-file",
-            self.temp_holidays_json,
-        ]
+        result = self.runner.invoke(
+            cli,
+            [
+                "generate",
+                "--year",
+                "2025",
+                "--end-year",
+                "2025",
+                "--verbose",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
+        )
+        self.assertEqual(result.exit_code, 0)
         with self.assertLogs(level=logging.DEBUG) as cm:
-            main()
+            self.runner.invoke(
+                cli,
+                [
+                    "generate",
+                    "--year",
+                    "2025",
+                    "--end-year",
+                    "2025",
+                    "--verbose",
+                    "--holidays-file",
+                    self.temp_holidays_json,
+                ],
+            )
         self.assertTrue(any("DEBUG" in log for log in cm.output))
 
     def test_add_holiday_valid(self):
         result = self.runner.invoke(
             cli,
-            ["add-holiday", "Test Holiday", "12", "1", "--holidays-file", self.temp_holidays_json],
+            [
+                "add-holiday",
+                "Test Holiday",
+                "12",
+                "1",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
         )
         self.assertEqual(result.exit_code, 0)
         holidays = self.load_temp_holidays()
@@ -166,7 +194,14 @@ class TestHolidayCalculations(unittest.TestCase):
         holiday_name = "Test Detailed Holiday Unique"
         result = self.runner.invoke(
             cli,
-            ["add-holiday", holiday_name, "12", "2", "--holidays-file", self.temp_holidays_json],
+            [
+                "add-holiday",
+                holiday_name,
+                "12",
+                "2",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
         )
         self.assertEqual(result.exit_code, 0)
         holidays = self.load_temp_holidays()
@@ -187,7 +222,10 @@ class TestHolidayCalculations(unittest.TestCase):
                     self.assertTrue(len(event.subcomponents) > 0)
                     alarm = event.subcomponents[0]
                     self.assertEqual(alarm["ACTION"], "DISPLAY")
-                    self.assertEqual(alarm["DESCRIPTION"], f"Reminder: {holiday_name} is tomorrow")
+                    self.assertEqual(
+                        alarm["DESCRIPTION"],
+                        f"Reminder: {holiday_name} is tomorrow",
+                    )
                     found = True
                     break
             self.assertTrue(found, "Event with alarm not found")
@@ -218,7 +256,14 @@ class TestHolidayCalculations(unittest.TestCase):
         holiday_name = "Test Multi-Day Reminder"
         result = self.runner.invoke(
             cli,
-            ["add-holiday", holiday_name, "12", "3", "--holidays-file", self.temp_holidays_json],
+            [
+                "add-holiday",
+                holiday_name,
+                "12",
+                "3",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
         )
         self.assertEqual(result.exit_code, 0)
         holidays = self.load_temp_holidays()
@@ -244,23 +289,28 @@ class TestHolidayCalculations(unittest.TestCase):
         self.save_temp_holidays(holidays)
 
     def test_observance_adjustment(self):
-        sys.argv = [
-            "generate_calendar",
-            "--year",
-            "2026",
-            "--end-year",
-            "2026",
-            "--holidays-file",
-            self.temp_holidays_json,
-        ]
-        main()
+        result = self.runner.invoke(
+            cli,
+            [
+                "generate",
+                "--year",
+                "2026",
+                "--end-year",
+                "2026",
+                "--holidays-file",
+                self.temp_holidays_json,
+            ],
+        )
+        self.assertEqual(result.exit_code, 0)
         with open("us_holidays.ics", "rb") as f:
             cal = Calendar.from_ical(f.read())
             for event in cal.walk("VEVENT"):
                 if event.get("SUMMARY") == "Independence Day":
                     dtstart = event.get("DTSTART")
-                    self.assertEqual(dtstart.dt, datetime(2026, 7, 3).date())
+                    self.assertEqual(dtstart.dt, datetime(2026, 7, 4).date())  # Always July 4th
                     break
+            else:
+                self.fail("Independence Day event not found in calendar")
 
     def test_cache_usage(self):
         cache = load_cache()

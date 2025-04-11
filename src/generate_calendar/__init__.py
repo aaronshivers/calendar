@@ -136,20 +136,6 @@ def get_last_weekday(year: int, month: int, weekday: int, cache: Dict[str, str])
     return date
 
 
-def adjust_for_observance(holiday_date: str, holiday_name: str) -> str:
-    """Adjust holiday date for observance (e.g., if on Saturday, observe on Friday)."""
-    try:
-        date = datetime.strptime(holiday_date, "%Y-%m-%d").date()
-        if date.weekday() == 5:  # Saturday
-            return (date - timedelta(days=1)).strftime("%Y-%m-%d")
-        elif date.weekday() == 6:  # Sunday
-            return (date + timedelta(days=1)).strftime("%Y-%m-%d")
-        return holiday_date
-    except ValueError as e:
-        logger.error(f"Invalid date format in adjust_for_observance for {holiday_name}: {e}")
-        return holiday_date
-
-
 def get_federal_holidays(year: int, federal_holidays: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     """Calculate federal holidays for a given year."""
     holidays = []
@@ -251,17 +237,6 @@ def generate_calendar(
             logger.error(f"Invalid date format for {holiday_name}: {holiday_date}. Error: {e}")
             continue
 
-        if holiday_name in ["New Year's Day", "Independence Day", "Veterans Day", "Christmas Day"]:
-            holiday_date = adjust_for_observance(holiday_date, holiday_name)
-            try:
-                dtstart = datetime.strptime(holiday_date, "%Y-%m-%d").date()
-                logger.debug(
-                    f"Applied observance rule for {holiday_name}, new date: {holiday_date}"
-                )
-            except ValueError as e:
-                logger.error(f"Failed to adjust observance for {holiday_name}: {e}")
-                continue
-
         holiday_key = (holiday_name, holiday_date)
         if holiday_key in seen:
             logger.warning(f"Skipping duplicate: {holiday_name} on {holiday_date}")
@@ -283,7 +258,6 @@ def generate_calendar(
                 event.add_component(alarm)
             if holiday_name in fixed_holidays and "reminder_days" not in holiday:
                 event.add("rrule", {"freq": "yearly"})
-                event.add("dtstart", datetime(start_year, dtstart.month, dtstart.day).date())
             cal.add_component(event)
             logger.info(f"Added: {holiday_name} on {holiday_date}")
 
