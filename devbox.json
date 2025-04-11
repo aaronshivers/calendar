@@ -1,13 +1,23 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
   "packages": [
-    "python@latest",
+    "python@3.13",
     "poetry@latest"
   ],
   "shell": {
     "init_hook": [
-      "poetry install",
-      "poetry shell"
-    ]
+      "poetry install --with dev",
+      "source $(poetry env info --path)/bin/activate"
+    ],
+    "scripts": {
+      "check": [
+        "pymarkdownlnt scan README.md",
+        "flake8 .",
+        "black --check .",
+        "mypy .",
+        "coverage run -m unittest tests/test_generate_calendar.py",
+        "coverage report"
+      ]
+    }
   }
 }

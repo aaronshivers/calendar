@@ -1,0 +1,49 @@
+name: Pull Request Checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+
+    - name: Run Markdown linting
+      run: |
+        poetry run pymarkdownlnt scan README.md
+
+    - name: Run flake8
+      run: |
+        poetry run flake8 .
+
+    - name: Run black (check only)
+      run: |
+        poetry run black --check .
+
+    - name: Run mypy
+      run: |
+        poetry run mypy .
+
+    - name: Run tests with coverage
+      run: |
+        poetry run coverage run -m unittest tests/test_generate_calendar.py
+        poetry run coverage report

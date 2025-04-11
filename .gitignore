@@ -1,9 +1,9 @@
 __pycache__/
 *.pyc
-holiday_cache.pkl
-us_holidays.ics
+*.pkl
+*.ics
 .venv/
 .vscode/
-.idea/.coverage
+.idea/
 .coverage
 htmlcov/
