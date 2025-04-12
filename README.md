@@ -59,7 +59,7 @@ If you prefer to set up the environment manually with Poetry:
 2. Install dependencies with Poetry:
 
     ```shell
-    poetry install
+    poetry shell
     ```
 
 ## Usage
@@ -150,14 +150,6 @@ The calendar includes:
   - `cache_file`: The name of the cache file (default: `holiday_cache.pkl`).
   - `default_year_range`: The default number of years to generate if `--end-year` is not specified (default: 5).
 - Edit `config/config.json` to customize these settings.
-
-## Dry Run
-
-- Use the `--dry-run` flag to preview the holidays without writing the iCal file:
-
-```shell
-poetry run generate_calendar generate --dry-run
-```
 
 ## Input Validation
 
