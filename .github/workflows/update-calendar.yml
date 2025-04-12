@@ -18,6 +18,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Devbox environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            /nix/store
+            ~/.devbox
+          key: devbox-${{ runner.os }}-${{ hashFiles('devbox.json', 'devbox.lock') }}
+          restore-keys: |
+            devbox-${{ runner.os }}-
+
       - name: Install Devbox
         uses: jetify-com/devbox-install-action@v0.12.0
 
@@ -65,3 +75,4 @@ jobs:
           branch: update-calendar-$(date +%Y-%m)
           base: master
           delete-branch: true
+          add-paths: us_holidays.ics
