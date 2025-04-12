@@ -17,3 +17,12 @@ repos:
       - id: mypy
         types: [python]
         additional_dependencies: ['types-python-dateutil', 'types-pytz']
+
+  - repo: local
+    hooks:
+      - id: run-tests
+        name: Run tests
+        entry: poetry run coverage run -m unittest tests/test_generate_calendar.py
+        language: system
+        types: [python]
+        pass_filenames: false
