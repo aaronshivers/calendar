@@ -3,7 +3,12 @@ name: Update Calendar
 on:
   schedule:
     - cron: '0 0 1 * *'  # Runs on the 1st of every month at 00:00 UTC
-
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 concurrency:
   group: calendar-update
   cancel-in-progress: true
