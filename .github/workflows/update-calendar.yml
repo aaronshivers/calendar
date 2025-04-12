@@ -26,9 +26,6 @@ jobs:
       - name: Format code with black
         run: devbox run format
 
-      - name: Check formatting with black
-        run: devbox run format-check
-
       - name: Run linting with flake8
         run: devbox run lint
 

@@ -1,19 +1,19 @@
 {
   "packages": [
     "python@3.13",
-    "poetry@2.1"
+    "poetry@latest"
   ],
   "shell": {
     "init_hook": [
       "poetry install"
     ],
     "scripts": {
-      "test": "poetry run coverage run -m unittest tests/test_generate_calendar.py && poetry run coverage report --fail-under=70",
-      "format": "poetry run black .",
+      "test":         "poetry run coverage run -m unittest tests/test_generate_calendar.py && poetry run coverage report --fail-under=70",
+      "format":       "poetry run black .",
       "format-check": "poetry run black --check .",
-      "lint": "poetry run flake8 .",
-      "typecheck": "poetry run mypy .",
-      "generate": "poetry run generate_calendar generate"
+      "lint":         "poetry run flake8 .",
+      "typecheck":    "poetry run mypy .",
+      "generate":     "poetry run generate_calendar generate"
     }
   }
 }

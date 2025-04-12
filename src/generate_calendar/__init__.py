@@ -2,7 +2,7 @@
 
 This module provides functionality to create an iCal (.ics) file containing US federal holidays and
 additional holidays like Halloween and Festivus. It includes a CLI for generating the calendar,
-adding/removing holidays, and supports features like observance rules and recurring events.
+adding/removing holidays, and supports features like recurring events.
 """
 
 import json
@@ -41,7 +41,7 @@ def load_config() -> Dict[str, Any]:
 
 
 CONFIG = load_config()
-OUTPUT_FILE: str = CONFIG["output_file"]  # "us_holidays.ics"
+OUTPUT_FILE: str = CONFIG["output_file"]
 CACHE_FILE: str = CONFIG["cache_file"]
 DEFAULT_YEAR_RANGE: int = CONFIG["default_year_range"]
 
@@ -274,55 +274,82 @@ def generate_calendar(
         sys.exit(1)
 
 
-@click.group()
+@click.group()  # type: ignore[misc]
 def cli() -> None:
     """CLI for generating calendars and managing holidays."""
     pass
 
 
-@cli.command()
-@click.option("--year", type=int, default=datetime.now().year, help="Start year for the calendar")
-@click.option("--end-year", type=int, default=None, help="End year for the calendar")
-@click.option("--dry-run", is_flag=True, help="Preview without writing the iCal file")
-@click.option("--verbose", is_flag=True, help="Enable verbose logging")
-@click.option("--holidays-file", default="src/holidays.json", help="Path to holidays JSON file")
-def generate(year: int, end_year: int, dry_run: bool, verbose: bool, holidays_file: str) -> None:
+@cli.command()  # type: ignore[misc]
+@click.option(
+    "--year", type=int, default=datetime.now().year, help="Start year for the calendar"
+)  # type: ignore[misc]
+@click.option(
+    "--end-year",
+    type=int,
+    default=None,
+    help="End year for the calendar (default: start_year + range - 1)",
+)  # type: ignore[misc]
+@click.option(
+    "--dry-run", is_flag=True, help="Preview without writing the iCal file"
+)  # type: ignore[misc]
+@click.option("--verbose", is_flag=True, help="Enable verbose logging")  # type: ignore[misc]
+@click.option(
+    "--holidays-file", default="src/holidays.json", help="Path to holidays JSON file"
+)  # type: ignore[misc]
+def generate(
+    year: int, end_year: int | None, dry_run: bool, verbose: bool, holidays_file: str
+) -> None:
     """Generate a custom US holidays iCal file."""
-    end_year = end_year if end_year else year + DEFAULT_YEAR_RANGE
-    generate_calendar(year, end_year, dry_run, verbose, holidays_file)
+    effective_end_year = end_year if end_year is not None else year + DEFAULT_YEAR_RANGE - 1
+    generate_calendar(year, effective_end_year, dry_run, verbose, holidays_file)
 
 
-@cli.command()
-@click.argument("name")
-@click.argument("month", type=int)
-@click.argument("day", type=int)
-@click.option("--holidays-file", default="src/holidays.json", help="Path to holidays JSON file")
+@cli.command()  # type: ignore[misc]
+@click.argument("name")  # type: ignore[misc]
+@click.argument("month", type=int)  # type: ignore[misc]
+@click.argument("day", type=int)  # type: ignore[misc]
+@click.option(
+    "--holidays-file", default="src/holidays.json", help="Path to holidays JSON file"
+)  # type: ignore[misc]
 def add_holiday(name: str, month: int, day: int, holidays_file: str) -> None:
     """Add a new manual holiday to holidays.json."""
     if not (1 <= month <= 12):
         logger.error(f"Invalid month: {month}. Must be between 1 and 12.")
         sys.exit(1)
     try:
-        datetime(2025, month, day)
+        # Use a leap year like 2024 to validate Feb 29
+        datetime(2024, month, day)
     except ValueError as e:
         logger.error(f"Invalid date: {month:02d}-{day:02d}. {str(e)}")
         sys.exit(1)
 
     holiday_config = load_holidays(holidays_file)
+    # Check if holiday already exists
+    for holiday_list_key in ["manual_holidays", "calculated_holidays", "federal_holidays"]:
+        if any(h["name"] == name for h in holiday_config.get(holiday_list_key, [])):
+            logger.error(f"Holiday '{name}' already exists.")
+            sys.exit(1)
+
     new_holiday = {"name": name, "month": month, "day": day}
     holiday_config["manual_holidays"].append(new_holiday)
-    holiday_config["approved_holidays"].append(name)
+    # Also add to approved list if not already there
+    if name not in holiday_config["approved_holidays"]:
+        holiday_config["approved_holidays"].append(name)
     with open(holidays_file, "w") as f:
-        json.dump(holiday_config, f, indent=2)
+        json.dump(holiday_config, f, indent=2)  # Use indent=2 for consistency
     logger.info(f"Added holiday: {name} on {month:02d}-{day:02d}")
 
 
-@cli.command()
-@click.argument("name")
-@click.option("--holidays-file", default="src/holidays.json", help="Path to holidays JSON file")
+@cli.command()  # type: ignore[misc]
+@click.argument("name")  # type: ignore[misc]
+@click.option(
+    "--holidays-file", default="src/holidays.json", help="Path to holidays JSON file"
+)  # type: ignore[misc]
 def remove_holiday(name: str, holidays_file: str) -> None:
     """Remove a holiday from holidays.json."""
     holiday_config = load_holidays(holidays_file)
+    initial_length = len(holiday_config["approved_holidays"])
     holiday_config["manual_holidays"] = [
         h for h in holiday_config["manual_holidays"] if h["name"] != name
     ]
@@ -335,9 +362,15 @@ def remove_holiday(name: str, holidays_file: str) -> None:
     holiday_config["approved_holidays"] = [
         h for h in holiday_config["approved_holidays"] if h != name
     ]
+
+    if len(holiday_config["approved_holidays"]) == initial_length:
+        logger.warning(f"Holiday '{name}' not found in any list.")
+        # Optionally exit if holiday not found, or just log warning
+        # sys.exit(1) # Uncomment to exit if holiday not found
+
     with open(holidays_file, "w") as f:
-        json.dump(holiday_config, f, indent=2)
-    logger.info(f"Removed holiday: {name}")
+        json.dump(holiday_config, f, indent=2)  # Use indent=2 for consistency
+    logger.info(f"Removed holiday: {name} (if it existed)")
 
 
 if __name__ == "__main__":

@@ -7,17 +7,16 @@ packages = [{include = "generate_calendar", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.13"
-icalendar = "^6.0"
+icalendar = "^6.1.3"
 click = "^8.1"
-flask = "^3.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
-flake8 = "^7.0"
-black = "^25.0"
-mypy = "^1.15"
-coverage = "^7.0"
-types-icalendar = "^6.0"
+pytest = "^8.3.5"
+flake8 = "^7.2.0"
+black = "^25.1.0"
+mypy = "^1.15.0"
+coverage = "^7.8.0"
+types-icalendar = "^6.1.3.20250329"
 pre-commit = "^4.2.0"
 pymarkdownlnt = "^0.9.29"
 pdoc = "^15.0.1"
@@ -30,4 +29,4 @@ line-length = 100
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.backends.poetry_backend"
+build-backend = "poetry.core.masonry.api"
