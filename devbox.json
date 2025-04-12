@@ -5,7 +5,7 @@
   ],
   "shell": {
     "init_hook": [
-      "poetry shell"
+      "poetry install"
     ],
     "scripts": {
       "test": "poetry run coverage run -m unittest tests/test_generate_calendar.py && poetry run coverage report --fail-under=70",
