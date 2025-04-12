@@ -1,0 +1,15 @@
+plugins:
+  md013:
+    enabled: false  # Disable line length
+  md009:
+    enabled: true   # No trailing spaces
+  md012:
+    enabled: true   # No multiple consecutive blank lines
+  md034:
+    enabled: true   # No bare URLs
+  md033:
+    enabled: true   # No inline HTML
+  md040:
+    enabled: true   # Fenced code blocks must have a language
+  md014:
+    enabled: false  # Commands don't need to show output

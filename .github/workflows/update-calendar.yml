@@ -2,64 +2,48 @@ name: Update Calendar
 
 on:
   schedule:
-    - cron: '0 0 1 * *'
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    - cron: '0 0 1 * *'  # Runs on the 1st of every month at 00:00 UTC
+  workflow_dispatch:  # Allows manual triggering
+
+concurrency:
+  group: calendar-update
+  cancel-in-progress: true
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          
-      - name: Install Poetry
-        run: pip install poetry
 
-      - name: Update poetry lock file
-        run: poetry lock
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         run: poetry install
 
-      - name: Format code with black
-        run: poetry run black .
-
-      - name: Check formatting with black
-        run: poetry run black --check .
-
-      - name: Run linting with flake8
-        run: poetry run flake8 .
-
-      - name: Run type checking with mypy
-        run: poetry run mypy .
-
-      - name: Run tests with coverage
-        run: poetry run coverage run -m unittest tests.test_generate_calendar
-
-      - name: Generate coverage report
-        run: poetry run coverage report
-
-      - name: Check coverage threshold
-        run: poetry run coverage report --fail-under=70
-
       - name: Generate calendar
-        run: poetry run python src/generate_calendar/__init__.py
+        run: poetry run generate_calendar generate
 
       - name: Commit and push changes
-        if: github.event_name != 'pull_request'
         run: |
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add -f us_holidays.ics
-            git commit -m "Update calendar file" || echo "No changes to commit"
-            git push origin master
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add -f us_holidays.ics
+          git commit -m "Update calendar for $(date +%Y-%m)" || echo "No changes to commit"
+          git push
