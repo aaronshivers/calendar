@@ -3,7 +3,12 @@ name: Update Calendar
 on:
   schedule:
     - cron: '0 0 1 * *'  # Runs on the 1st of every month at 00:00 UTC
-
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 concurrency:
   group: calendar-update
   cancel-in-progress: true
@@ -23,9 +28,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: pip install poetry
 
       - name: Check Poetry Version
         run: poetry --version
@@ -39,42 +42,36 @@ jobs:
       - name: Install dependencies
         run: poetry install --verbose
 
-      - name: Verify input files exist
-        run: |
-          ls -la
-          if [ -f "src/holidays.json" ]; then
-            echo "holidays.json exists"
-            cat src/holidays.json
-          else
-            echo "Error: src/holidays.json not found"
-            exit 1
-          fi
-          if [ -f "config/config.json" ]; then
-            echo "config.json exists"
-            cat config/config.json
-          else
-            echo "Error: config/config.json not found"
-            exit 1
-          fi
+      - name: Format code with black
+        run: poetry run black .
+
+      - name: Check formatting with black
+        run: poetry run black --check .
+
+      - name: Run linting with flake8
+        run: poetry run flake8 .
+
+      - name: Run type checking with mypy
+        run: poetry run mypy .
+
+      - name: Run tests with coverage
+        run: poetry run coverage run -m unittest tests/test_generate_calendar.py
+
+      - name: Generate coverage report
+        run: poetry run coverage report
+
+      - name: Check coverage threshold
+        run: poetry run coverage report --fail-under=70
 
       - name: Generate calendar
         run: poetry run generate_calendar generate --verbose
 
-      - name: Verify calendar file exists
-        run: |
-          ls -la
-          if [ -f "us_holidays.ics" ]; then
-            echo "us_holidays.ics was generated successfully."
-            cat us_holidays.ics
-          else
-            echo "Error: us_holidays.ics was not generated."
-            exit 1
-          fi
 
       - name: Commit and push changes
+        if: github.event_name != 'pull_request'
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add -f us_holidays.ics
-          git commit -m "Update calendar for $(date +%Y-%m)" || echo "No changes to commit"
-          git push
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Actions Bot"
+            git add -f us_holidays.ics
+            git commit -m "Update calendar for $(date +%Y-%m)" || echo "No changes to commit"
+            git push origin master
