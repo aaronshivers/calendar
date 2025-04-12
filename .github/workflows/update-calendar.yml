@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,6 +27,9 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Check Poetry Version
+        run: poetry --version
+
       - name: Set up cache
         uses: actions/cache@v4
         with:
@@ -34,10 +37,39 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --verbose
+
+      - name: Verify input files exist
+        run: |
+          ls -la
+          if [ -f "src/holidays.json" ]; then
+            echo "holidays.json exists"
+            cat src/holidays.json
+          else
+            echo "Error: src/holidays.json not found"
+            exit 1
+          fi
+          if [ -f "config/config.json" ]; then
+            echo "config.json exists"
+            cat config/config.json
+          else
+            echo "Error: config/config.json not found"
+            exit 1
+          fi
 
       - name: Generate calendar
-        run: poetry run generate_calendar generate
+        run: poetry run generate_calendar generate --verbose
+
+      - name: Verify calendar file exists
+        run: |
+          ls -la
+          if [ -f "us_holidays.ics" ]; then
+            echo "us_holidays.ics was generated successfully."
+            cat us_holidays.ics
+          else
+            echo "Error: us_holidays.ics was not generated."
+            exit 1
+          fi
 
       - name: Commit and push changes
         run: |
