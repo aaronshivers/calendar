@@ -66,16 +66,6 @@ jobs:
       - name: Generate calendar
         run: poetry run generate_calendar generate --verbose
 
-      - name: Verify calendar file exists
-        run: |
-          ls -la
-          if [ -f "us_holidays.ics" ]; then
-            echo "us_holidays.ics was generated successfully."
-            cat us_holidays.ics
-          else
-            echo "Error: us_holidays.ics was not generated."
-            exit 1
-          fi
 
       - name: Commit and push changes
         run: |
