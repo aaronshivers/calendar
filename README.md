@@ -59,7 +59,7 @@ If you prefer to set up the environment manually with Poetry:
 2. Install dependencies with Poetry:
 
     ```shell
-    poetry install
+    poetry shell
     ```
 
 ## Usage
