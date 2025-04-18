@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
 *.pkl
-*.ics
 .venv/
 .vscode/
 .idea/
