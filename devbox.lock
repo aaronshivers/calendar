@@ -4,7 +4,7 @@
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "resolved": "github:NixOS/nixpkgs/6c5963357f3c1c840201eda129a99d455074db04?lastModified=1743076231&narHash=sha256-yQugdVfi316qUfqzN8JMaA2vixl%2B45GxNm4oUfXlbgw%3D"
     },
-    "poetry@2.1": {
+    "poetry@latest": {
       "last_modified": "2025-03-22T01:19:59Z",
       "plugin_version": "0.0.4",
       "resolved": "github:NixOS/nixpkgs/0740f6f238767d4caf9afe774d3e88105766dfc6#poetry",
@@ -69,10 +69,10 @@
         }
       }
     },
-    "python@3.13": {
-      "last_modified": "2025-03-23T05:31:05Z",
+    "python@latest": {
+      "last_modified": "2025-03-11T17:52:14Z",
       "plugin_version": "0.0.4",
-      "resolved": "github:NixOS/nixpkgs/dd613136ee91f67e5dba3f3f41ac99ae89c5406b#python313",
+      "resolved": "github:NixOS/nixpkgs/0d534853a55b5d02a4ababa1d71921ce8f0aee4c#python313",
       "source": "devbox-search",
       "version": "3.13.2",
       "systems": {
@@ -104,11 +104,11 @@
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/wjxlppca1s14xzw5iz608qpywyl5mcdw-python3-3.13.2",
+              "path": "/nix/store/m2bvzkwhj5b8692388dc0nim945681i0-python3-3.13.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/wjxlppca1s14xzw5iz608qpywyl5mcdw-python3-3.13.2"
+          "store_path": "/nix/store/m2bvzkwhj5b8692388dc0nim945681i0-python3-3.13.2"
         },
         "x86_64-linux": {
           "outputs": [

@@ -23,6 +23,10 @@ jobs:
         with:
           enable-cache: 'true'
 
+      - name: Start Devbox shell and install dependencies
+        run: |
+          devbox shell -- poetry --version
+
       - name: Format code with black
         run: devbox run format
 
