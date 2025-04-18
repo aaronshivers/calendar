@@ -9,59 +9,69 @@ on:
   pull_request:
     branches:
       - master
+concurrency:
+  group: calendar-update
+  cancel-in-progress: true
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-24.04
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Install Devbox
-        uses: jetify-com/devbox-install-action@v0.12.0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
-      - name: Start Devbox shell and install dependencies
-        run: |
-          devbox shell -- poetry --version
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Check Poetry Version
+        run: poetry --version
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: poetry install --verbose
 
       - name: Format code with black
-        run: devbox run format
+        run: poetry run black .
 
       - name: Check formatting with black
-        run: devbox run format-check
+        run: poetry run black --check .
 
       - name: Run linting with flake8
-        run: devbox run lint
+        run: poetry run flake8 .
 
       - name: Run type checking with mypy
-        run: devbox run typecheck
+        run: poetry run mypy .
 
       - name: Run tests with coverage
-        run: devbox run test
+        run: poetry run coverage run -m unittest tests/test_generate_calendar.py
+
+      - name: Generate coverage report
+        run: poetry run coverage report
+
+      - name: Check coverage threshold
+        run: poetry run coverage report --fail-under=70
 
       - name: Generate calendar
-        run: devbox run generate
+        run: poetry run generate_calendar generate --verbose
 
-      - name: Verify calendar file exists
-        run: |
-          ls -la
-          if [ -f "us_holidays.ics" ]; then
-            echo "us_holidays.ics was generated successfully."
-            cat us_holidays.ics
-          else
-            echo "Error: us_holidays.ics was not generated."
-            exit 1
-          fi
 
-      - name: Create Pull Request
+      - name: Commit and push changes
         if: github.event_name != 'pull_request'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Update calendar for $(date +%Y-%m)"
-          title: "Update calendar for $(date +%Y-%m)"
-          body: "Automated update of us_holidays.ics for $(date +%Y-%m)."
-          branch: update-calendar-$(date +%Y-%m)
-          base: master
-          delete-branch: true
+        run: |
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Actions Bot"
+            git add -f us_holidays.ics
+            git commit -m "Update calendar for $(date +%Y-%m)" || echo "No changes to commit"
+            git push origin master

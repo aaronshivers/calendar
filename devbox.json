@@ -1,19 +1,23 @@
 {
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
   "packages": [
-    "python@3.13.0",
-    "poetry@1.8.3"
+    "python@3.13",
+    "poetry@latest"
   ],
   "shell": {
     "init_hook": [
-      "poetry install"
+      "poetry install --with dev",
+      "source $(poetry env info --path)/bin/activate"
     ],
     "scripts": {
-      "test": "poetry run coverage run -m unittest tests/test_generate_calendar.py && poetry run coverage report --fail-under=70",
-      "format": "poetry run black .",
-      "format-check": "poetry run black --check .",
-      "lint": "poetry run flake8 .",
-      "typecheck": "poetry run mypy .",
-      "generate": "poetry run python src/generate_calendar/__init__.py"
+      "check": [
+        "pymarkdownlnt scan README.md",
+        "flake8 .",
+        "black --check .",
+        "mypy .",
+        "coverage run -m unittest tests/test_generate_calendar.py",
+        "coverage report"
+      ]
     }
   }
 }
