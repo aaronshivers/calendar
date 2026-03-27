@@ -8,7 +8,7 @@ from datetime import date as calendar_date
 from datetime import datetime, timedelta
 from importlib import resources
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 import click
 import yaml
@@ -21,14 +21,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_FILE = Path("us_holidays.ics")
-DEFAULT_YEAR_COUNT = 10
+DEFAULT_YEAR_COUNT = 2
 MUTATION_COMMANDS = {"add-holiday", "remove-holiday"}
-OBSERVED_HOLIDAYS = {
-    "New Year's Day",
-    "Independence Day",
-    "Veterans Day",
-    "Christmas Day",
-}
+
+
+class HolidayEntry(TypedDict):
+    name: str
+    date: calendar_date
+
+
+class PendingHolidayEntry(HolidayEntry, total=False):
+    enabled: bool
+    observed: bool
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -89,6 +93,15 @@ def validate_holiday_definitions(holiday_config: dict[str, Any]) -> None:
             datetime(2024, holiday["month"], holiday["day"])
         except ValueError as exc:
             raise ValueError(f"Manual holiday has an invalid date: {holiday['name']}") from exc
+
+    for section in required_sections:
+        for holiday in holiday_config[section]:
+            if "enabled" in holiday and not isinstance(holiday["enabled"], bool):
+                raise ValueError(f"Holiday enabled flag must be true or false: {holiday['name']}")
+
+    for holiday in holiday_config["federal_holidays"]:
+        if holiday.get("observed") and "day" not in holiday:
+            raise ValueError(f"Observed federal holiday must use a fixed date: {holiday['name']}")
 
     allowed_calculated_types = {"easter", "nth_weekday"}
     invalid_types = sorted(
@@ -153,9 +166,12 @@ def adjust_for_observance(holiday_date: calendar_date) -> calendar_date:
 
 def get_federal_holidays(
     year: int, federal_holidays: list[dict[str, Any]]
-) -> list[dict[str, calendar_date]]:
-    holidays: list[dict[str, calendar_date]] = []
+) -> list[PendingHolidayEntry]:
+    holidays: list[PendingHolidayEntry] = []
     for holiday in federal_holidays:
+        if not holiday.get("enabled", True):
+            continue
+
         if "day" in holiday:
             holiday_date = datetime(year, holiday["month"], holiday["day"]).date()
         elif "last" in holiday:
@@ -164,7 +180,14 @@ def get_federal_holidays(
             holiday_date = get_nth_weekday(
                 year, holiday["month"], holiday["weekday"], holiday["nth"]
             )
-        holidays.append({"name": holiday["name"], "date": holiday_date})
+        holidays.append(
+            {
+                "name": holiday["name"],
+                "date": holiday_date,
+                "enabled": True,
+                "observed": bool(holiday.get("observed", False)),
+            }
+        )
     return holidays
 
 
@@ -172,48 +195,73 @@ def calculate_default_end_year(start_year: int) -> int:
     return start_year + DEFAULT_YEAR_COUNT - 1
 
 
+def build_fixed_date(year: int, month: int, day: int) -> calendar_date | None:
+    try:
+        return datetime(year, month, day).date()
+    except ValueError:
+        return None
+
+
 def build_holiday_entries(
     start_year: int, end_year: int, holidays_file: Path | str | None = None
-) -> list[dict[str, calendar_date]]:
+) -> list[HolidayEntry]:
     if end_year < start_year:
         raise ValueError("end_year must be greater than or equal to start_year")
 
     holiday_config = load_holidays(holidays_file)
-    holidays: list[dict[str, calendar_date]] = []
+    holidays: list[HolidayEntry] = []
     seen: set[tuple[str, calendar_date]] = set()
+    range_start = calendar_date(start_year, 1, 1)
+    range_end = calendar_date(end_year, 12, 31)
 
-    for year in range(start_year, end_year + 1):
+    for year in range(start_year - 1, end_year + 2):
         year_holidays = get_federal_holidays(year, holiday_config["federal_holidays"])
 
         for holiday in holiday_config["manual_holidays"]:
-            year_holidays.append(
-                {
-                    "name": holiday["name"],
-                    "date": datetime(year, holiday["month"], holiday["day"]).date(),
-                }
-            )
+            if not holiday.get("enabled", True):
+                continue
+
+            holiday_date = build_fixed_date(year, holiday["month"], holiday["day"])
+            if holiday_date is None:
+                logger.debug(
+                    "Skipping %s for %s because %02d-%02d is not valid that year",
+                    holiday["name"],
+                    year,
+                    holiday["month"],
+                    holiday["day"],
+                )
+                continue
+
+            year_holidays.append({"name": holiday["name"], "date": holiday_date, "observed": False})
 
         for holiday in holiday_config["calculated_holidays"]:
+            if not holiday.get("enabled", True):
+                continue
+
             if holiday["type"] == "easter":
                 holiday_date = get_easter_sunday(year)
             else:
                 holiday_date = get_nth_weekday(
                     year, holiday["month"], holiday["weekday"], holiday["nth"]
                 )
-            year_holidays.append({"name": holiday["name"], "date": holiday_date})
+            year_holidays.append({"name": holiday["name"], "date": holiday_date, "observed": False})
 
         for holiday in year_holidays:
-            holiday_date = holiday["date"]
-            if holiday["name"] in OBSERVED_HOLIDAYS:
+            holiday_name = cast(str, holiday["name"])
+            holiday_date = cast(calendar_date, holiday["date"])
+            if holiday.get("observed", False):
                 holiday_date = adjust_for_observance(holiday_date)
 
-            holiday_key = (holiday["name"], holiday_date)
+            if holiday_date < range_start or holiday_date > range_end:
+                continue
+
+            holiday_key = (holiday_name, holiday_date)
             if holiday_key in seen:
                 logger.warning("Skipping duplicate holiday definition for %s on %s", *holiday_key)
                 continue
 
             seen.add(holiday_key)
-            holidays.append({"name": holiday["name"], "date": holiday_date})
+            holidays.append({"name": holiday_name, "date": holiday_date})
 
     return holidays
 

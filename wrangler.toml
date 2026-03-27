@@ -9,4 +9,4 @@ custom_domain = true
 
 [vars]
 HOLIDAYS_YAML_URL = "https://raw.githubusercontent.com/aaronshivers/calendar/master/src/generate_calendar/holidays.yaml"
-YEAR_COUNT = "10"
+YEAR_COUNT = "2"

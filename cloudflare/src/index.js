@@ -1,12 +1,6 @@
 import yaml from "js-yaml";
 
-const DEFAULT_YEAR_COUNT = 10;
-const OBSERVED_HOLIDAYS = new Set([
-  "New Year's Day",
-  "Independence Day",
-  "Veterans Day",
-  "Christmas Day",
-]);
+const DEFAULT_YEAR_COUNT = 2;
 
 function getYearCount(env) {
   const parsed = Number.parseInt(env.YEAR_COUNT || String(DEFAULT_YEAR_COUNT), 10);
@@ -77,10 +71,33 @@ function adjustForObservance(date) {
   return date;
 }
 
+function buildFixedDate(year, month, day) {
+  const date = utcDate(year, month, day);
+  return date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? date : null;
+}
+
+function isDateInRange(date, startDate, endDate) {
+  return date >= startDate && date <= endDate;
+}
+
 function validateHolidayConfig(config) {
   for (const section of ["manual_holidays", "calculated_holidays", "federal_holidays"]) {
     if (!Array.isArray(config?.[section])) {
       throw new Error(`Holiday config is missing section: ${section}`);
+    }
+  }
+
+  for (const section of ["manual_holidays", "calculated_holidays", "federal_holidays"]) {
+    for (const holiday of config[section]) {
+      if ("enabled" in holiday && typeof holiday.enabled !== "boolean") {
+        throw new Error(`Holiday enabled flag must be true or false: ${holiday.name}`);
+      }
+    }
+  }
+
+  for (const holiday of config.federal_holidays) {
+    if (holiday.observed && !("day" in holiday)) {
+      throw new Error(`Observed federal holiday must use a fixed date: ${holiday.name}`);
     }
   }
 }
@@ -105,20 +122,30 @@ async function loadHolidayConfig(env) {
 function buildEntries(config, startYear, endYear) {
   const entries = [];
   const seen = new Set();
+  const startDate = utcDate(startYear, 1, 1);
+  const endDate = utcDate(endYear, 12, 31);
 
-  for (let year = startYear; year <= endYear; year += 1) {
+  for (let year = startYear - 1; year <= endYear + 1; year += 1) {
     for (const holiday of config.federal_holidays) {
+      if (holiday.enabled === false) {
+        continue;
+      }
+
       let date;
-      if (holiday.day) {
+      if ("day" in holiday) {
         date = utcDate(year, holiday.month, holiday.day);
-      } else if (holiday.last) {
+      } else if ("last" in holiday) {
         date = getLastWeekday(year, holiday.month, holiday.weekday);
       } else {
         date = getNthWeekday(year, holiday.month, holiday.weekday, holiday.nth);
       }
 
-      if (OBSERVED_HOLIDAYS.has(holiday.name)) {
+      if (holiday.observed) {
         date = adjustForObservance(date);
+      }
+
+      if (!isDateInRange(date, startDate, endDate)) {
+        continue;
       }
 
       const dedupeKey = `${holiday.name}:${formatIsoDate(date)}`;
@@ -129,7 +156,15 @@ function buildEntries(config, startYear, endYear) {
     }
 
     for (const holiday of config.manual_holidays) {
-      const date = utcDate(year, holiday.month, holiday.day);
+      if (holiday.enabled === false) {
+        continue;
+      }
+
+      const date = buildFixedDate(year, holiday.month, holiday.day);
+      if (!date || !isDateInRange(date, startDate, endDate)) {
+        continue;
+      }
+
       const dedupeKey = `${holiday.name}:${formatIsoDate(date)}`;
       if (!seen.has(dedupeKey)) {
         seen.add(dedupeKey);
@@ -138,10 +173,18 @@ function buildEntries(config, startYear, endYear) {
     }
 
     for (const holiday of config.calculated_holidays) {
+      if (holiday.enabled === false) {
+        continue;
+      }
+
       const date =
         holiday.type === "easter"
           ? getEasterSunday(year)
           : getNthWeekday(year, holiday.month, holiday.weekday, holiday.nth);
+      if (!isDateInRange(date, startDate, endDate)) {
+        continue;
+      }
+
       const dedupeKey = `${holiday.name}:${formatIsoDate(date)}`;
       if (!seen.has(dedupeKey)) {
         seen.add(dedupeKey);

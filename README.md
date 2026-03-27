@@ -1,12 +1,13 @@
 # US Holidays Calendar
 
-This project builds a static iCalendar (`.ics`) file for a curated set of US holidays. The repository is optimized around generating a long-lived calendar file that can be hosted from a stable URL and subscribed to by calendar clients such as Apple Calendar, Google Calendar, and Outlook.
+This project builds an iCalendar (`.ics`) feed for a curated set of US holidays. The repository is optimized around serving that calendar from a stable URL that clients such as Apple Calendar, Google Calendar, and Outlook can subscribe to directly.
 
 ## What This Repo Does
 - Generates a static `us_holidays.ics` file.
 - Bundles the holiday definitions with the Python package so the CLI works outside the repo root.
-- Ships enough years by default to avoid depending on a monthly automation job.
+- Serves the current year plus the next year by default, which keeps the feed practical without overcommitting to a long forecasting window.
 - Supports editing the holiday definition file with `add-holiday` and `remove-holiday`.
+- Treats weekend observance and per-holiday enable/disable switches as data in [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml), including leap-day safety.
 
 ## Requirements
 - Python 3.13+
@@ -18,7 +19,7 @@ poetry install
 ```
 
 ## Generate the Calendar
-Generate the current year plus the next 9 years into `us_holidays.ics`:
+Generate the current year plus the next year into `us_holidays.ics`:
 
 ```shell
 poetry run generate_calendar
@@ -59,12 +60,25 @@ poetry run generate_calendar remove-holiday --holidays-file src/generate_calenda
 
 If you run these commands against an installed, read-only package, pass `--holidays-file` so the CLI knows which editable YAML file to modify.
 
+You can also disable a holiday without deleting it:
+
+```yaml
+manual_holidays:
+  - name: National Ice Cream Day
+    month: 7
+    day: 21
+    enabled: false
+```
+
+If `enabled` is omitted, the holiday is included by default.
+
 ## Cloudflare Deployment
 The recommended permanent deployment path is Cloudflare Workers using the root-level [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml) and [package.json](/Users/as082003/IdeaProjects/calendar/package.json).
 
 How it works:
 - the Worker in [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js) fetches [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml) from this repository's raw GitHub URL
 - it generates the `.ics` payload on demand for each request, so there is no GitHub cron and no Cloudflare KV configuration to maintain
+- it builds only a small forward-looking range by default, but that range is still configurable with `YEAR_COUNT` in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml)
 - the Worker returns the file with `text/calendar` headers from a stable HTTPS URL
 
 Setup steps:

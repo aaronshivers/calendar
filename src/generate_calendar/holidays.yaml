@@ -45,6 +45,7 @@ federal_holidays:
   - name: New Year's Day
     month: 1
     day: 1
+    observed: true
   - name: Martin Luther King Jr. Day
     month: 1
     weekday: 0
@@ -60,9 +61,11 @@ federal_holidays:
   - name: Juneteenth
     month: 6
     day: 19
+    observed: true
   - name: Independence Day
     month: 7
     day: 4
+    observed: true
   - name: Labor Day
     month: 9
     weekday: 0
@@ -74,6 +77,7 @@ federal_holidays:
   - name: Veterans Day
     month: 11
     day: 11
+    observed: true
   - name: Thanksgiving Day
     month: 11
     weekday: 3
@@ -81,3 +85,4 @@ federal_holidays:
   - name: Christmas Day
     month: 12
     day: 25
+    observed: true
