@@ -3,14 +3,27 @@ main = "cloudflare/src/index.js"
 compatibility_date = "2026-03-27"
 workers_dev = false
 
+[build]
+command = "npm run worker:build-static"
+
 [[rules]]
 type = "Text"
-globs = ["**/*.yaml", "**/*.yml"]
+globs = ["**/*.yaml", "**/*.yml", "**/*.ics", "**/*.txt"]
 fallthrough = true
+
+[triggers]
+crons = ["0 0 1 * *"]
 
 [[routes]]
 pattern = "calendar.corncob.app"
 custom_domain = true
+
+# Create this namespace once, then uncomment and fill in the returned IDs:
+# npx wrangler kv namespace create CALENDAR_CACHE
+# [[kv_namespaces]]
+# binding = "CALENDAR_CACHE"
+# id = "your-production-namespace-id"
+# preview_id = "your-preview-namespace-id"
 
 [vars]
 YEAR_COUNT = "2"

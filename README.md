@@ -76,15 +76,18 @@ If `enabled` is omitted, the holiday is included by default.
 The recommended permanent deployment path is Cloudflare Workers using the root-level [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml) and [package.json](/Users/as082003/IdeaProjects/calendar/package.json).
 
 How it works:
-- the Worker in [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js) bundles [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml) directly at deploy time
-- it generates the `.ics` payload on demand for each request, so there is no GitHub cron and no Cloudflare KV configuration to maintain
-- it builds only a small forward-looking range by default, but that range is still configurable with `YEAR_COUNT` in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml)
+- Wrangler runs [build_static_calendar.py](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/build_static_calendar.py) at deploy time to generate a bundled `.ics` fallback artifact
+- the Worker serves the most recently stored calendar from Cloudflare KV and only falls back to the deploy-built artifact if KV is empty
+- a monthly Cloudflare cron trigger refreshes the stored calendar on the schedule in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml)
+- subscriber traffic only reads the stored calendar; it does not regenerate the feed
 - the Worker returns the file with `text/calendar` headers from a stable HTTPS URL
 
 Setup steps:
 1. From the repo root, run `npm install`.
-2. Deploy from the repo root with `npx wrangler deploy`.
-3. Subscribe iCloud or any other calendar client to the Worker URL.
+2. Create the KV namespace once with `npx wrangler kv namespace create CALENDAR_CACHE`.
+3. Copy the returned IDs into the commented `[[kv_namespaces]]` block in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml).
+4. Deploy from the repo root with `npx wrangler deploy`.
+5. Subscribe iCloud or any other calendar client to the Worker URL.
 
 ## Static Hosting
 [app.py](/Users/as082003/IdeaProjects/calendar/app.py) still works if you want to serve a generated local file yourself, but the recommended automated path is now Cloudflare Workers rather than GitHub Actions scheduling.
@@ -105,8 +108,9 @@ npm run worker:verify
 - [src/generate_calendar/__init__.py](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/__init__.py): calendar generation logic and CLI entrypoint
 - [src/generate_calendar/holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml): bundled holiday definitions
 - [cloudflare/src/calendar.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/calendar.js): shared Worker calendar logic used by deploys and parity checks
-- [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js): Worker runtime and HTTP serving entrypoint
+- [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js): Worker runtime for KV-backed serving and scheduled refresh
 - [cloudflare/scripts/check-parity.mjs](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/check-parity.mjs): parity check between Worker and Python holiday generation
+- [cloudflare/scripts/build_static_calendar.py](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/build_static_calendar.py): deploy-time build step for the bundled fallback `.ics`
 - [tests/test_generate_calendar.py](/Users/as082003/IdeaProjects/calendar/tests/test_generate_calendar.py): hermetic tests
 
 ## License

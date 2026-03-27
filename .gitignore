@@ -7,3 +7,6 @@ us_holidays.ics
 .idea/.coverage
 .coverage
 htmlcov/
+node_modules/
+.npm-cache/
+cloudflare/generated/
