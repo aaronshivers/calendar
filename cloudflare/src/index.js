@@ -1,6 +1,5 @@
 import yaml from "js-yaml";
 
-const DEFAULT_CACHE_KEY = "us_holidays.ics";
 const DEFAULT_YEAR_COUNT = 10;
 const OBSERVED_HOLIDAYS = new Set([
   "New Year's Day",
@@ -8,10 +7,6 @@ const OBSERVED_HOLIDAYS = new Set([
   "Veterans Day",
   "Christmas Day",
 ]);
-
-function getCacheKey(env) {
-  return env.CALENDAR_CACHE_KEY || DEFAULT_CACHE_KEY;
-}
 
 function getYearCount(env) {
   const parsed = Number.parseInt(env.YEAR_COUNT || String(DEFAULT_YEAR_COUNT), 10);
@@ -186,15 +181,13 @@ async function generateCalendar(env) {
   const config = await loadHolidayConfig(env);
   const currentYear = new Date().getUTCFullYear();
   const endYear = currentYear + getYearCount(env) - 1;
-  const ics = buildCalendar(buildEntries(config, currentYear, endYear));
-  await env.CALENDAR_CACHE.put(getCacheKey(env), ics);
-  return ics;
+  return buildCalendar(buildEntries(config, currentYear, endYear));
 }
 
-function calendarResponse(body, generatedAt = null) {
+function calendarResponse(body, generatedAt) {
   const headers = new Headers({
     "content-type": "text/calendar; charset=utf-8",
-    "cache-control": "public, max-age=300",
+    "cache-control": "public, max-age=3600",
   });
 
   if (generatedAt) {
@@ -205,7 +198,7 @@ function calendarResponse(body, generatedAt = null) {
 }
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method !== "GET" && request.method !== "HEAD") {
       return new Response("Method Not Allowed", { status: 405 });
@@ -215,22 +208,13 @@ export default {
       return new Response("ok");
     }
 
-    const cacheKey = getCacheKey(env);
-    let calendar = await env.CALENDAR_CACHE.get(cacheKey);
-
-    if (!calendar) {
-      calendar = await generateCalendar(env);
-    }
+    const generatedAt = new Date().toISOString();
+    const calendar = await generateCalendar(env);
 
     if (request.method === "HEAD") {
-      return calendarResponse("", new Date().toISOString());
+      return calendarResponse("", generatedAt);
     }
 
-    ctx.waitUntil(Promise.resolve());
-    return calendarResponse(calendar, new Date().toISOString());
-  },
-
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(generateCalendar(env));
+    return calendarResponse(calendar, generatedAt);
   },
 };

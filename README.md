@@ -60,31 +60,25 @@ poetry run generate_calendar remove-holiday --holidays-file src/generate_calenda
 If you run these commands against an installed, read-only package, pass `--holidays-file` so the CLI knows which editable YAML file to modify.
 
 ## Cloudflare Deployment
-The permanent automation path lives in [cloudflare/](/Users/as082003/IdeaProjects/calendar/cloudflare):
-- [wrangler.toml](/Users/as082003/IdeaProjects/calendar/cloudflare/wrangler.toml) configures the Worker, monthly cron trigger, and KV binding.
-- [src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js) serves the current `.ics` file over HTTP and refreshes it on Cloudflare's cron trigger.
-- [package.json](/Users/as082003/IdeaProjects/calendar/cloudflare/package.json) provides local Worker scripts via Wrangler.
+The recommended permanent deployment path is Cloudflare Workers using the root-level [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml) and [package.json](/Users/as082003/IdeaProjects/calendar/package.json).
 
 How it works:
-- the Worker fetches [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml) from a raw URL you configure in `HOLIDAYS_YAML_URL`
-- on the first day of each month, Cloudflare regenerates the calendar and stores it in Workers KV
-- normal HTTP requests return the cached `text/calendar` payload from KV
+- the Worker in [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js) fetches [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml) from this repository's raw GitHub URL
+- it generates the `.ics` payload on demand for each request, so there is no GitHub cron and no Cloudflare KV configuration to maintain
+- the Worker returns the file with `text/calendar` headers from a stable HTTPS URL
 
 Setup steps:
-1. Create a Workers KV namespace for the calendar payload.
-2. Replace the placeholder values in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/cloudflare/wrangler.toml):
-   `HOLIDAYS_YAML_URL` should point at the raw hosted `src/generate_calendar/holidays.yaml` file in this repo, and the KV `id` / `preview_id` should be your namespace IDs.
-3. In [cloudflare/](/Users/as082003/IdeaProjects/calendar/cloudflare), run `npm install`.
-4. Deploy with `npx wrangler deploy`.
-5. Subscribe iCloud or any other calendar client to the Worker URL.
+1. From the repo root, run `npm install`.
+2. Deploy from the repo root with `npx wrangler deploy`.
+3. Subscribe iCloud or any other calendar client to the Worker URL.
 
-For local cron testing, run `npx wrangler dev --test-scheduled` and then trigger the cron endpoint locally.
+If your repo default branch changes from `master`, update `HOLIDAYS_YAML_URL` in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/wrangler.toml).
 
 ## Static Hosting
 [app.py](/Users/as082003/IdeaProjects/calendar/app.py) still works if you want to serve a generated local file yourself, but the recommended automated path is now Cloudflare Workers rather than GitHub Actions scheduling.
 
 ## Repository Automation
-[update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is now validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
+[update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
 
 ## Quality Checks
 ```shell
