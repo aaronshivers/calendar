@@ -1,0 +1,17 @@
+{
+  "name": "calendar-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test-scheduled": "wrangler dev --test-scheduled",
+    "check": "node --check src/index.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.7.0"
+  }
+}

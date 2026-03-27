@@ -1,183 +1,104 @@
 # US Holidays Calendar
 
-This project generates a custom iCal (`.ics`) file containing a curated list of US holidays, including federal holidays and additional non-national holidays like Halloween and Festivus. It’s designed to be reusable for any year range and can be subscribed to for automatic updates.
+This project builds a static iCalendar (`.ics`) file for a curated set of US holidays. The repository is optimized around generating a long-lived calendar file that can be hosted from a stable URL and subscribed to by calendar clients such as Apple Calendar, Google Calendar, and Outlook.
 
-## Features
-- Generates a custom `.ics` file for a range of years (current year and next year by default).
-- Calculates federal holidays locally (e.g., New Year's Day, Independence Day) without external API dependencies.
-- Includes manually defined holidays (e.g., Groundhog Day, Mother's Day) with fixed or calculated dates from `src/holidays.json`.
-- Supports subscription via a hosted URL for periodic updates in calendar apps.
-- CLI commands to add/remove holidays and dry-run generation.
+## What This Repo Does
+- Generates a static `us_holidays.ics` file.
+- Bundles the holiday definitions with the Python package so the CLI works outside the repo root.
+- Ships enough years by default to avoid depending on a monthly automation job.
+- Supports editing the holiday definition file with `add-holiday` and `remove-holiday`.
 
 ## Requirements
 - Python 3.13+
-- [Poetry](https://python-poetry.org/docs/) for dependency management
-- Dependencies: `icalendar`, `click`
+- Poetry
 
 ## Installation
-1. Clone the repository:
-```shell
-git clone https://github.com/aaronshivers/calendar.git
-cd calendar
-```
-2. Install dependencies with Poetry:
 ```shell
 poetry install
 ```
 
-## Usage
-- **Generate for Current Year and Next Year**:
-```shell
-poetry run python src/generate_calendar.py
-```
-- **Generate for a Custom Year Range**:
-```shell
-poetry run python src/generate_calendar.py --year 2025 --end-year 2030
-```
-- **Dry Run (Preview Without Writing)**:
-```shell
-poetry run python src/generate_calendar.py --dry-run
-```
-- **Add a Holiday**:
-```shell
-poetry run python src/generate_calendar.py add-holiday "National Pizza Day" 2 9
-```
-- **Remove a Holiday**:
-```shell
-poetry run python src/generate_calendar.py remove-holiday "National Pizza Day"
-```
-- Output: Creates `us_holidays.ics` in the project directory.
+## Generate the Calendar
+Generate the current year plus the next 9 years into `us_holidays.ics`:
 
-## Holiday List
-The calendar includes:
-- **Federal Holidays** (calculated locally):
-  - New Year's Day
-  - Martin Luther King Jr. Day
-  - Presidents' Day
-  - Memorial Day
-  - Juneteenth
-  - Independence Day
-  - Labor Day
-  - Columbus Day
-  - Veterans Day
-  - Thanksgiving Day
-  - Christmas Day
-- **Additional Holidays** (manually added in `src/holidays.json`):
-  - Groundhog Day (Feb 2)
-  - Valentine's Day (Feb 14)
-  - St. Patrick's Day (Mar 17)
-  - April Fool's Day (Apr 1)
-  - Easter Sunday (calculated)
-  - Earth Day (Apr 22)
-  - Cinco de Mayo (May 5)
-  - Mother's Day (2nd Sunday in May)
-  - Father's Day (3rd Sunday in June)
-  - Halloween (Oct 31)
-  - Festivus (Dec 23)
-
-## Configuration
-- The script uses `config/config.json` to configure runtime options:
-  - `output_file`: The name of the generated iCal file (default: `us_holidays.ics`).
-  - `cache_file`: The name of the cache file (default: `holiday_cache.pkl`).
-  - `default_year_range`: The default number of years to generate if `--end-year` is not specified (default: 2).
-- Edit `config/config.json` to customize these settings.
-
-## Dry Run
-- Use the `--dry-run` flag to preview the holidays without writing the iCal file:
 ```shell
-poetry run python src/generate_calendar.py --dry-run
+poetry run generate_calendar
 ```
 
-## Input Validation
-- The `add-holiday` command validates the month and day to ensure they form a valid date. For example, invalid dates like February 30th will be rejected.
-## Type Checking
-- Use `mypy` to check for type-related issues:
+Generate a custom range:
+
 ```shell
-poetry run mypy .
+poetry run generate_calendar --year 2025 --end-year 2030
 ```
 
-## Managing Holidays
-- **Add a Holiday**:
+Write to a different path:
+
 ```shell
-poetry run python src/generate_calendar.py add-holiday "National Pizza Day" 2 9
-```
-- **Remove a Holiday**:
-```shell
-poetry run python src/generate_calendar.py remove-holiday "National Pizza Day"
+poetry run generate_calendar --output /tmp/us-holidays.ics
 ```
 
-## Documentation
-- Documentation is generated using `pydoc` and available as `generate_calendar.html` in the repository.
+Preview the build without writing a file:
 
-## Linting and Formatting
-- **Linting**: Use `flake8` to check for style issues and potential errors:
 ```shell
+poetry run generate_calendar --dry-run
+```
+
+## Manage Holiday Definitions
+The bundled holiday definitions live at [src/generate_calendar/holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml).
+
+Add a holiday to a specific YAML file:
+
+```shell
+poetry run generate_calendar add-holiday --holidays-file src/generate_calendar/holidays.yaml "National Pizza Day" 2 9
+```
+
+Remove a holiday from a specific YAML file:
+
+```shell
+poetry run generate_calendar remove-holiday --holidays-file src/generate_calendar/holidays.yaml "National Pizza Day"
+```
+
+If you run these commands against an installed, read-only package, pass `--holidays-file` so the CLI knows which editable YAML file to modify.
+
+## Cloudflare Deployment
+The permanent automation path lives in [cloudflare/](/Users/as082003/IdeaProjects/calendar/cloudflare):
+- [wrangler.toml](/Users/as082003/IdeaProjects/calendar/cloudflare/wrangler.toml) configures the Worker, monthly cron trigger, and KV binding.
+- [src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js) serves the current `.ics` file over HTTP and refreshes it on Cloudflare's cron trigger.
+- [package.json](/Users/as082003/IdeaProjects/calendar/cloudflare/package.json) provides local Worker scripts via Wrangler.
+
+How it works:
+- the Worker fetches [holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml) from a raw URL you configure in `HOLIDAYS_YAML_URL`
+- on the first day of each month, Cloudflare regenerates the calendar and stores it in Workers KV
+- normal HTTP requests return the cached `text/calendar` payload from KV
+
+Setup steps:
+1. Create a Workers KV namespace for the calendar payload.
+2. Replace the placeholder values in [wrangler.toml](/Users/as082003/IdeaProjects/calendar/cloudflare/wrangler.toml):
+   `HOLIDAYS_YAML_URL` should point at the raw hosted `src/generate_calendar/holidays.yaml` file in this repo, and the KV `id` / `preview_id` should be your namespace IDs.
+3. In [cloudflare/](/Users/as082003/IdeaProjects/calendar/cloudflare), run `npm install`.
+4. Deploy with `npx wrangler deploy`.
+5. Subscribe iCloud or any other calendar client to the Worker URL.
+
+For local cron testing, run `npx wrangler dev --test-scheduled` and then trigger the cron endpoint locally.
+
+## Static Hosting
+[app.py](/Users/as082003/IdeaProjects/calendar/app.py) still works if you want to serve a generated local file yourself, but the recommended automated path is now Cloudflare Workers rather than GitHub Actions scheduling.
+
+## Repository Automation
+[update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is now validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
+
+## Quality Checks
+```shell
+poetry run black --check .
 poetry run flake8 .
-```
-- **Formatting**: Use `black` to auto-format the code:
-```shell
-poetry run black .
-```
-- These steps are also run in the GitHub Actions workflow to ensure code quality.
-
-## Testing
-- Run unit tests to verify holiday calculations:
-```shell
-poetry run python -m unittest discover -s tests
+poetry run mypy .
+poetry run pytest -q
 ```
 
-## Automating Updates
-- The calendar is regenerated monthly on the 1st via GitHub Actions. See `.github/workflows/update-calendar.yml` for details.
-
-## Automating Updates
-- The calendar is regenerated monthly on the 1st via GitHub Actions. See `.github/workflows/update-calendar.yml` for details.
-
-## Subscription
-To subscribe to the calendar for automatic updates, use the following URL in your calendar application:
-
-https://raw.githubusercontent.com/aaronshivers/calendar/master/us_holidays.ics
-
-### Instructions for Popular Calendar Apps
-
-#### Google Calendar
-1. Open Google Calendar.
-2. Click on "Add calendar" in the left-hand menu.
-3. Select "From URL".
-4. Enter the URL: `https://raw.githubusercontent.com/aaronshivers/calendar/master/us_holidays.ics`
-5. Click "Add calendar".
-
-#### Apple Calendar (macOS/iOS)
-1. Open the Calendar app.
-2. Go to "File" > "New Calendar Subscription".
-3. Enter the URL: `https://raw.githubusercontent.com/aaronshivers/calendar/master/us_holidays.ics`
-4. Click "Subscribe".
-
-#### Microsoft Outlook
-1. Open Outlook.
-2. Go to "File" > "Account Settings" > "Account Settings".
-3. Click on "Internet Calendars" tab.
-4. Click "Add".
-5. Enter the URL: `https://raw.githubusercontent.com/aaronshivers/calendar/master/us_holidays.ics`
-6. Click "Add".
-
-## Development
-- Edit `src/generate_calendar.py` to modify the core logic.
-- Edit `src/holidays.json` to update the holiday list.
-- Test locally before pushing updates to the hosted file.
+## Project Layout
+- [src/generate_calendar/__init__.py](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/__init__.py): calendar generation logic and CLI entrypoint
+- [src/generate_calendar/holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml): bundled holiday definitions
+- [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js): Worker runtime for scheduled refresh and HTTP serving
+- [tests/test_generate_calendar.py](/Users/as082003/IdeaProjects/calendar/tests/test_generate_calendar.py): hermetic tests
 
 ## License
-MIT License - feel free to use, modify, and distribute.
-
-## Contributing
-Pull requests welcome! Please open an issue first to discuss changes.
-
-## Development
-- Edit `src/generate_calendar.py` to modify the core logic.
-- Edit `src/holidays.json` to update the holiday list.
-- Test locally before pushing updates to the hosted file.
-
-## License
-MIT License - feel free to use, modify, and distribute.
-
-## Contributing
-Pull requests welcome! Please open an issue first to discuss changes.
+MIT

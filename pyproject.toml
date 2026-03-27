@@ -4,12 +4,14 @@ version = "0.1.0"
 description = "Generate a custom US holidays iCal file"
 authors = ["Your Name <your@email.com>"]
 packages = [{include = "generate_calendar", from = "src"}]
+include = ["src/generate_calendar/holidays.yaml"]
 
 [tool.poetry.dependencies]
 python = "^3.13"
 icalendar = "^6.0"
 click = "^8.1"
-flask = "^3.0"  # Add flask as a dependency
+flask = "^3.0"
+pyyaml = "^6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
@@ -17,7 +19,8 @@ flake8 = "^7.0"
 black = "^25.0"
 mypy = "^1.15"
 coverage = "^7.0"
-types-icalendar = "^6.0"  # Add type stubs for icalendar
+types-icalendar = "^6.0"
+types-pyyaml = "^6.0"
 
 [tool.poetry.scripts]
 generate_calendar = "generate_calendar:main"

@@ -1,21 +1,19 @@
-from flask import Flask, send_file
-from generate_calendar import generate_calendar
+from pathlib import Path
+
+from flask import Flask, Response, abort, send_file
+
+from generate_calendar import DEFAULT_OUTPUT_FILE
 
 app = Flask(__name__)
+OUTPUT_FILE = Path(DEFAULT_OUTPUT_FILE)
 
 
-def generate_calendar_file() -> None:
-    # Assuming some default values for start_year and end_year
-    start_year = 2025
-    end_year = 2026
-    generate_calendar(start_year, end_year)
+@app.get("/")  # type: ignore[misc]
+def index() -> Response:
+    if not OUTPUT_FILE.exists():
+        abort(404, description="Calendar file not found. Run `generate_calendar` first.")
+    return send_file(OUTPUT_FILE, mimetype="text/calendar")
 
-
-# Generate the calendar before serving
-generate_calendar_file()
-
-# Serve the generated calendar file
-app.add_url_rule("/", "index", lambda: send_file("us_holidays.ics", as_attachment=True))
 
 if __name__ == "__main__":
     app.run()

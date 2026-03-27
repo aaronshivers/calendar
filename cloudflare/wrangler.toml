@@ -1,0 +1,16 @@
+name = "us-holidays-calendar"
+main = "src/index.js"
+compatibility_date = "2026-03-27"
+workers_dev = true
+
+[vars]
+HOLIDAYS_YAML_URL = "https://raw.githubusercontent.com/REPLACE_ME/REPLACE_ME/master/src/generate_calendar/holidays.yaml"
+YEAR_COUNT = "10"
+
+[triggers]
+crons = ["0 0 1 * *"]
+
+[[kv_namespaces]]
+binding = "CALENDAR_CACHE"
+id = "REPLACE_ME"
+preview_id = "REPLACE_ME"

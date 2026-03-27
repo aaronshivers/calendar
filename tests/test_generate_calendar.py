@@ -1,121 +1,120 @@
-import sys
-import unittest
 from datetime import datetime
-import logging
-import json
+from pathlib import Path
+
+import pytest
+import yaml
+from click.testing import CliRunner
+
 from generate_calendar import (
+    build_holiday_entries,
+    calculate_default_end_year,
+    cli,
+    generate_calendar,
     get_easter_sunday,
-    get_nth_weekday,
     get_last_weekday,
-    load_cache,
-    get_federal_holidays,
-    main,
+    get_nth_weekday,
+    load_holidays,
+    validate_holiday_definitions,
 )
 
 
-# Add src/ to the Python path to import generate_calendar
-sys.path.insert(0, "/Users/aaron/repos/calendar/src")
+def write_holidays_file(path: Path, holidays: dict) -> None:
+    path.write_text(
+        yaml.safe_dump(holidays, sort_keys=False, default_flow_style=False),
+        encoding="utf-8",
+    )
 
 
-class TestHolidayCalculations(unittest.TestCase):
-    def setUp(self):
-        self.cache = load_cache()
-        # Load holidays for federal holidays test
-        with open("src/holidays.json", "r") as f:
-            self.holiday_config = json.load(f)
-        self.federal_holidays = self.holiday_config["federal_holidays"]
-
-    def test_easter_sunday(self):
-        # Test Easter Sunday for 2025 (known date: April 20, 2025)
-        easter_2025 = get_easter_sunday(2025, self.cache)
-        self.assertEqual(easter_2025, datetime(2025, 4, 20).date())
-
-        # Test Easter Sunday for 2026 (known date: April 5, 2026)
-        easter_2026 = get_easter_sunday(2026, self.cache)
-        self.assertEqual(easter_2026, datetime(2026, 4, 5).date())
-
-    def test_nth_weekday(self):
-        # Test 3rd Monday in January 2025 (MLK Jr. Day: Jan 20, 2025)
-        mlk_2025 = get_nth_weekday(2025, 1, 0, 3)
-        self.assertEqual(mlk_2025, datetime(2025, 1, 20).date())
-
-        # Test 4th Thursday in November 2025 (Thanksgiving: Nov 27, 2025)
-        thanksgiving_2025 = get_nth_weekday(2025, 11, 3, 4)
-        self.assertEqual(thanksgiving_2025, datetime(2025, 11, 27).date())
-
-    def test_last_weekday(self):
-        # Test last Monday in May 2025 (Memorial Day: May 26, 2025)
-        memorial_2025 = get_last_weekday(2025, 5, 0)
-        self.assertEqual(memorial_2025, datetime(2025, 5, 26).date())
-
-    def test_add_invalid_holiday(self):
-        # Attempt to add a holiday with an invalid date
-        sys.argv = ["generate_calendar", "add-holiday", "Invalid", "2025-13-01"]
-        with self.assertRaises(SystemExit):
-            main()
-
-    def test_federal_holidays(self):
-        # Test federal holidays for 2025
-        year = 2025
-        federal_holidays = get_federal_holidays(year, self.federal_holidays)
-        expected_dates = {
-            "New Year's Day": "2025-01-01",
-            "Martin Luther King Jr. Day": "2025-01-20",
-            "Presidents' Day": "2025-02-17",
-            "Memorial Day": "2025-05-26",
-            "Juneteenth": "2025-06-19",
-            "Independence Day": "2025-07-04",
-            "Labor Day": "2025-09-01",
-            "Columbus Day": "2025-10-13",
-            "Veterans Day": "2025-11-11",
-            "Thanksgiving Day": "2025-11-27",
-            "Christmas Day": "2025-12-25",
-        }
-        for holiday in federal_holidays:
-            if holiday["name"] in expected_dates:
-                self.assertEqual(holiday["date"], expected_dates[holiday["name"]])
-
-    def test_generate_calendar_main(self):
-        # Test the main function with default years
-        sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025"]
-        main()
-
-    def test_generate_calendar_dry_run(self):
-        # Test the --dry-run option
-        sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025", "--dry-run"]
-        main()  # Should not write to file, just log the holidays
-
-    def test_generate_calendar_verbose(self):
-        # Test the --verbose option
-        sys.argv = ["generate_calendar", "--year", "2025", "--end-year", "2025", "--verbose"]
-        # Capture logging output
-        with self.assertLogs(level=logging.DEBUG) as cm:
-            main()
-        self.assertTrue(any("DEBUG" in log for log in cm.output))
-
-    def test_add_holiday_valid(self):
-        # Test adding a valid holiday
-        sys.argv = ["generate_calendar", "add-holiday", "Test Holiday", "12", "1"]
-        with self.assertRaises(SystemExit) as cm:
-            main()
-        self.assertEqual(cm.exception.code, 0)  # Optionally check the exit code
-
-        # Check if the holiday was added to holidays.json
-        with open("src/holidays.json", "r") as f:
-            holidays = json.load(f)
-            manual_holidays = holidays.get("manual_holidays", [])
-            self.assertIn("Test Holiday", [h["name"] for h in manual_holidays])
-        # Clean up by removing the added holiday
-        holidays["manual_holidays"] = [h for h in manual_holidays if h["name"] != "Test Holiday"]
-        with open("src/holidays.json", "w") as f:
-            json.dump(holidays, f, indent=4)
-
-    def test_add_holiday_invalid_date(self):
-        # Test adding a holiday with an invalid date
-        sys.argv = ["generate_calendar", "add-holiday", "Invalid Holiday", "13", "1"]
-        with self.assertRaises(SystemExit):  # Should exit due to invalid date
-            main()
+def test_easter_sunday() -> None:
+    assert get_easter_sunday(2025) == datetime(2025, 4, 20).date()
+    assert get_easter_sunday(2026) == datetime(2026, 4, 5).date()
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_nth_weekday() -> None:
+    assert get_nth_weekday(2025, 1, 0, 3) == datetime(2025, 1, 20).date()
+    assert get_nth_weekday(2025, 11, 3, 4) == datetime(2025, 11, 27).date()
+
+
+def test_last_weekday() -> None:
+    assert get_last_weekday(2025, 5, 0) == datetime(2025, 5, 26).date()
+
+
+def test_default_end_year_is_inclusive() -> None:
+    assert calculate_default_end_year(2025) == 2034
+
+
+def test_load_holidays_uses_bundled_data() -> None:
+    holiday_config = load_holidays()
+    manual_names = {holiday["name"] for holiday in holiday_config["manual_holidays"]}
+    assert "National Ice Cream Day" in manual_names
+
+
+def test_validate_holiday_definitions_rejects_duplicate_names() -> None:
+    with pytest.raises(ValueError, match="Holiday names must be unique"):
+        validate_holiday_definitions(
+            {
+                "manual_holidays": [{"name": "Duplicate", "month": 1, "day": 1}],
+                "calculated_holidays": [{"name": "Duplicate", "type": "easter"}],
+                "federal_holidays": [],
+            }
+        )
+
+
+def test_generate_calendar_writes_expected_output(tmp_path: Path) -> None:
+    output_path = tmp_path / "calendar.ics"
+
+    result = generate_calendar(2025, 2025, output_file=output_path)
+
+    assert result == output_path
+    calendar_text = output_path.read_text(encoding="utf-8")
+    assert "SUMMARY:New Year's Day" in calendar_text
+    assert "SUMMARY:National Ice Cream Day" in calendar_text
+
+
+def test_generate_calendar_dry_run_does_not_write_file(tmp_path: Path) -> None:
+    output_path = tmp_path / "calendar.ics"
+
+    result = generate_calendar(2025, 2025, dry_run=True, output_file=output_path)
+
+    assert result is None
+    assert not output_path.exists()
+
+
+def test_build_holiday_entries_rejects_inverted_year_range() -> None:
+    with pytest.raises(ValueError, match="end_year must be greater than or equal to start_year"):
+        build_holiday_entries(2026, 2025)
+
+
+def test_add_holiday_updates_only_target_file(tmp_path: Path) -> None:
+    holiday_path = tmp_path / "holidays.yaml"
+    holiday_config = load_holidays()
+    write_holidays_file(holiday_path, holiday_config)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["add-holiday", "--holidays-file", str(holiday_path), "Test Holiday", "12", "1"],
+    )
+
+    assert result.exit_code == 0
+    updated_holidays = yaml.safe_load(holiday_path.read_text(encoding="utf-8"))
+    assert any(holiday["name"] == "Test Holiday" for holiday in updated_holidays["manual_holidays"])
+
+
+def test_remove_holiday_updates_only_target_file(tmp_path: Path) -> None:
+    holiday_path = tmp_path / "holidays.yaml"
+    holiday_config = load_holidays()
+    holiday_config["manual_holidays"].append({"name": "Temporary Holiday", "month": 8, "day": 8})
+    write_holidays_file(holiday_path, holiday_config)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["remove-holiday", "--holidays-file", str(holiday_path), "Temporary Holiday"],
+    )
+
+    assert result.exit_code == 0
+    updated_holidays = yaml.safe_load(holiday_path.read_text(encoding="utf-8"))
+    assert all(
+        holiday["name"] != "Temporary Holiday" for holiday in updated_holidays["manual_holidays"]
+    )

@@ -1,8 +1,6 @@
 name: Update Calendar
 
 on:
-  schedule:
-    - cron: '0 0 1 * *'
   push:
     branches:
       - master
@@ -11,28 +9,22 @@ on:
       - master
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          
+          python-version: "3.13"
+
       - name: Install Poetry
         run: pip install poetry
 
-      - name: Update poetry lock file
-        run: poetry lock
-
       - name: Install dependencies
         run: poetry install
-
-      - name: Format code with black
-        run: poetry run black .
 
       - name: Check formatting with black
         run: poetry run black --check .
@@ -44,7 +36,7 @@ jobs:
         run: poetry run mypy .
 
       - name: Run tests with coverage
-        run: poetry run coverage run -m unittest tests.test_generate_calendar
+        run: poetry run coverage run -m pytest -q
 
       - name: Generate coverage report
         run: poetry run coverage report
@@ -52,14 +44,5 @@ jobs:
       - name: Check coverage threshold
         run: poetry run coverage report --fail-under=70
 
-      - name: Generate calendar
-        run: poetry run python src/generate_calendar/__init__.py
-
-      - name: Commit and push changes
-        if: github.event_name != 'pull_request'
-        run: |
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add -f us_holidays.ics
-            git commit -m "Update calendar file" || echo "No changes to commit"
-            git push origin master
+      - name: Smoke test calendar generation
+        run: poetry run python -m generate_calendar --dry-run
