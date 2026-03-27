@@ -18,12 +18,9 @@ crons = ["0 0 1 * *"]
 pattern = "calendar.corncob.app"
 custom_domain = true
 
-# Create this namespace once, then uncomment and fill in the returned IDs:
-# npx wrangler kv namespace create CALENDAR_CACHE
-# [[kv_namespaces]]
-# binding = "CALENDAR_CACHE"
-# id = "your-production-namespace-id"
-# preview_id = "your-preview-namespace-id"
+[[kv_namespaces]]
+binding = "CALENDAR_CACHE"
+id = "488a1e24b8e0473f8488079b5c65a553"
 
 [vars]
 YEAR_COUNT = "2"
