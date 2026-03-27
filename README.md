@@ -82,6 +82,8 @@ How it works:
 - subscriber traffic only reads the stored calendar; it does not regenerate the feed
 - the Worker returns the file with `text/calendar` headers from a stable HTTPS URL
 
+The monthly cron runs at `00:00 UTC` on the first day of each month (`0 0 1 * *`).
+
 Setup steps:
 1. From the repo root, run `npm install`.
 2. Create the KV namespace once with `npx wrangler kv namespace create CALENDAR_CACHE`.

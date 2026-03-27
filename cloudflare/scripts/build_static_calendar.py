@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+import logging
 
 from generate_calendar import DEFAULT_YEAR_COUNT, build_calendar
 
@@ -24,13 +25,16 @@ def read_year_count() -> int:
 def main() -> None:
     year_count = read_year_count()
     now = datetime.now(timezone.utc)
+    generated_at = now.isoformat()
     start_year = now.year
     end_year = start_year + year_count - 1
+    logging.getLogger().setLevel(logging.WARNING)
     calendar_text = build_calendar(start_year, end_year).to_ical().decode("utf-8")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     CALENDAR_PATH.write_text(calendar_text, encoding="utf-8")
-    GENERATED_AT_PATH.write_text(now.isoformat(), encoding="utf-8")
+    GENERATED_AT_PATH.write_text(generated_at, encoding="utf-8")
+    print(f"Built fallback calendar for years {start_year}-{end_year} at {generated_at}")
 
 
 if __name__ == "__main__":

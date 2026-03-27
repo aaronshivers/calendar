@@ -21,6 +21,7 @@ custom_domain = true
 [[kv_namespaces]]
 binding = "CALENDAR_CACHE"
 id = "488a1e24b8e0473f8488079b5c65a553"
+preview_id = "488a1e24b8e0473f8488079b5c65a553"
 
 [vars]
 YEAR_COUNT = "2"
