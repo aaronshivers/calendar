@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "worker:check": "node --check cloudflare/src/index.js",
+    "worker:parity": "node cloudflare/scripts/check-parity.mjs",
+    "worker:verify": "npm run worker:check && npm run worker:parity",
     "cf:deploy": "wrangler deploy",
     "cf:dev": "wrangler dev"
   },

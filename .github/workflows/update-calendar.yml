@@ -15,10 +15,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
+      - name: Install Node.js dependencies
+        run: npm ci
 
       - name: Install Poetry
         run: pip install poetry
@@ -37,6 +46,9 @@ jobs:
 
       - name: Run tests with coverage
         run: poetry run coverage run -m pytest -q
+
+      - name: Verify Worker parity
+        run: npm run worker:verify
 
       - name: Generate coverage report
         run: poetry run coverage report

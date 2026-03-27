@@ -3,10 +3,14 @@ main = "cloudflare/src/index.js"
 compatibility_date = "2026-03-27"
 workers_dev = false
 
+[[rules]]
+type = "Text"
+globs = ["**/*.yaml", "**/*.yml"]
+fallthrough = true
+
 [[routes]]
 pattern = "calendar.corncob.app"
 custom_domain = true
 
 [vars]
-HOLIDAYS_YAML_URL = "https://raw.githubusercontent.com/aaronshivers/calendar/master/src/generate_calendar/holidays.yaml"
 YEAR_COUNT = "2"

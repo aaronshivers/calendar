@@ -35,7 +35,7 @@ class PendingHolidayEntry(HolidayEntry, total=False):
     observed: bool
 
 
-def _read_json(path: Path) -> dict[str, Any]:
+def _read_yaml(path: Path) -> dict[str, Any]:
     try:
         return cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
     except FileNotFoundError as exc:
@@ -62,7 +62,7 @@ def _bundled_holidays() -> dict[str, Any]:
 
 def load_holidays(holidays_file: Path | str | None = None) -> dict[str, Any]:
     holiday_config = (
-        _bundled_holidays() if holidays_file is None else _read_json(Path(holidays_file))
+        _bundled_holidays() if holidays_file is None else _read_yaml(Path(holidays_file))
     )
     validate_holiday_definitions(holiday_config)
     return holiday_config
@@ -184,7 +184,6 @@ def get_federal_holidays(
             {
                 "name": holiday["name"],
                 "date": holiday_date,
-                "enabled": True,
                 "observed": bool(holiday.get("observed", False)),
             }
         )
