@@ -91,9 +91,6 @@ Setup steps:
 4. Deploy from the repo root with `npx wrangler deploy`.
 5. Subscribe iCloud or any other calendar client to the Worker URL.
 
-## Static Hosting
-[app.py](/Users/as082003/IdeaProjects/calendar/app.py) still works if you want to serve a generated local file yourself, but the recommended automated path is now Cloudflare Workers rather than GitHub Actions scheduling.
-
 ## Repository Automation
 [update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
 
@@ -110,9 +107,11 @@ npm run worker:verify
 - [src/generate_calendar/__init__.py](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/__init__.py): calendar generation logic and CLI entrypoint
 - [src/generate_calendar/holidays.yaml](/Users/as082003/IdeaProjects/calendar/src/generate_calendar/holidays.yaml): bundled holiday definitions
 - [cloudflare/src/calendar.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/calendar.js): shared Worker calendar logic used by deploys and parity checks
+- [cloudflare/src/runtime.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/runtime.js): testable Worker runtime for fetch and scheduled behavior
 - [cloudflare/src/index.js](/Users/as082003/IdeaProjects/calendar/cloudflare/src/index.js): Worker runtime for KV-backed serving and scheduled refresh
 - [cloudflare/scripts/check-parity.mjs](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/check-parity.mjs): parity check between Worker and Python holiday generation
 - [cloudflare/scripts/build_static_calendar.py](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/build_static_calendar.py): deploy-time build step for the bundled fallback `.ics`
+- [cloudflare/scripts/smoke-fetch.mjs](/Users/as082003/IdeaProjects/calendar/cloudflare/scripts/smoke-fetch.mjs): smoke test for bundle fallback, KV reads, and scheduled refresh writes
 - [tests/test_generate_calendar.py](/Users/as082003/IdeaProjects/calendar/tests/test_generate_calendar.py): hermetic tests
 
 ## License

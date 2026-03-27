@@ -7,7 +7,8 @@
     "worker:check": "node --check cloudflare/src/index.js",
     "worker:bundle-check": "npm run worker:build-static && npx wrangler deploy --dry-run",
     "worker:parity": "node cloudflare/scripts/check-parity.mjs",
-    "worker:verify": "npm run worker:check && npm run worker:parity && npm run worker:bundle-check",
+    "worker:smoke": "npm run worker:build-static && node cloudflare/scripts/smoke-fetch.mjs",
+    "worker:verify": "npm run worker:check && npm run worker:parity && npm run worker:smoke && npm run worker:bundle-check",
     "cf:deploy": "wrangler deploy",
     "cf:dev": "wrangler dev"
   },
