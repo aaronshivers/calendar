@@ -91,6 +91,13 @@ Setup steps:
 4. Deploy from the repo root with `npx wrangler deploy`.
 5. Subscribe iCloud or any other calendar client to the Worker URL.
 
+GitHub Actions deploy automation lives in [.github/workflows/deploy-worker.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/deploy-worker.yml). It runs on pushes to `master` and can also be started manually from the Actions tab. Configure these repository secrets before using it:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+The workflow validates the generator and Worker, deploys with Wrangler, then refreshes the `CALENDAR_CACHE` KV entries so subscribers receive the newly generated calendar immediately instead of waiting for the monthly cron.
+
 ## Repository Automation
 [update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
 
