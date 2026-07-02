@@ -248,19 +248,25 @@ def build_holiday_entries(
         for holiday in year_holidays:
             holiday_name = cast(str, holiday["name"])
             holiday_date = cast(calendar_date, holiday["date"])
+            entries = [(holiday_name, holiday_date)]
             if holiday.get("observed", False):
-                holiday_date = adjust_for_observance(holiday_date)
+                observed_date = adjust_for_observance(holiday_date)
+                if observed_date != holiday_date:
+                    entries.append((f"{holiday_name} (Observed)", observed_date))
 
-            if holiday_date < range_start or holiday_date > range_end:
-                continue
+            for entry_name, entry_date in entries:
+                if entry_date < range_start or entry_date > range_end:
+                    continue
 
-            holiday_key = (holiday_name, holiday_date)
-            if holiday_key in seen:
-                logger.warning("Skipping duplicate holiday definition for %s on %s", *holiday_key)
-                continue
+                holiday_key = (entry_name, entry_date)
+                if holiday_key in seen:
+                    logger.warning(
+                        "Skipping duplicate holiday definition for %s on %s", *holiday_key
+                    )
+                    continue
 
-            seen.add(holiday_key)
-            holidays.append({"name": holiday_name, "date": holiday_date})
+                seen.add(holiday_key)
+                holidays.append({"name": entry_name, "date": entry_date})
 
     return holidays
 

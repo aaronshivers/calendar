@@ -121,18 +121,24 @@ export function buildEntries(config, startYear, endYear) {
         date = getNthWeekday(year, holiday.month, holiday.weekday, holiday.nth);
       }
 
+      const holidayEntries = [{ name: holiday.name, date }];
       if (holiday.observed) {
-        date = adjustForObservance(date);
+        const observedDate = adjustForObservance(date);
+        if (observedDate.getTime() !== date.getTime()) {
+          holidayEntries.push({ name: `${holiday.name} (Observed)`, date: observedDate });
+        }
       }
 
-      if (!isDateInRange(date, startDate, endDate)) {
-        continue;
-      }
+      for (const entry of holidayEntries) {
+        if (!isDateInRange(entry.date, startDate, endDate)) {
+          continue;
+        }
 
-      const dedupeKey = `${holiday.name}:${formatIsoDate(date)}`;
-      if (!seen.has(dedupeKey)) {
-        seen.add(dedupeKey);
-        entries.push({ name: holiday.name, date });
+        const dedupeKey = `${entry.name}:${formatIsoDate(entry.date)}`;
+        if (!seen.has(dedupeKey)) {
+          seen.add(dedupeKey);
+          entries.push(entry);
+        }
       }
     }
 

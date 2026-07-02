@@ -7,7 +7,7 @@
   "shell": {
     "init_hook": [
       "poetry install",
-      "poetry shell"
+      "eval \"$(poetry env activate)\""
     ]
   }
 }
