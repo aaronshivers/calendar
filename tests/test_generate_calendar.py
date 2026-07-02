@@ -85,17 +85,35 @@ def test_build_holiday_entries_rejects_inverted_year_range() -> None:
         build_holiday_entries(2026, 2025)
 
 
-def test_build_holiday_entries_observes_juneteenth() -> None:
-    holidays = build_holiday_entries(2027, 2027)
+@pytest.mark.parametrize(
+    ("holiday_name", "start_year", "end_year", "actual_date", "observed_date"),
+    [
+        ("New Year's Day", 2021, 2022, date(2022, 1, 1), date(2021, 12, 31)),
+        ("Juneteenth", 2027, 2027, date(2027, 6, 19), date(2027, 6, 18)),
+        ("Independence Day", 2026, 2026, date(2026, 7, 4), date(2026, 7, 3)),
+        ("Veterans Day", 2023, 2023, date(2023, 11, 11), date(2023, 11, 10)),
+        ("Christmas Day", 2022, 2022, date(2022, 12, 25), date(2022, 12, 26)),
+    ],
+)
+def test_build_holiday_entries_keeps_actual_holiday_when_observed_date_differs(
+    holiday_name: str,
+    start_year: int,
+    end_year: int,
+    actual_date: date,
+    observed_date: date,
+) -> None:
+    holidays = build_holiday_entries(start_year, end_year)
 
-    assert {"name": "Juneteenth", "date": date(2027, 6, 18)} in holidays
+    assert {"name": holiday_name, "date": actual_date} in holidays
+    assert {"name": f"{holiday_name} (Observed)", "date": observed_date} in holidays
+    assert {"name": holiday_name, "date": observed_date} not in holidays
 
 
 def test_build_holiday_entries_filters_observed_dates_by_actual_calendar_year() -> None:
     holidays = build_holiday_entries(2021, 2021)
 
     assert {"name": "New Year's Day", "date": date(2021, 1, 1)} in holidays
-    assert {"name": "New Year's Day", "date": date(2021, 12, 31)} in holidays
+    assert {"name": "New Year's Day (Observed)", "date": date(2021, 12, 31)} in holidays
 
 
 def test_build_holiday_entries_skips_february_29_on_non_leap_years(tmp_path: Path) -> None:
