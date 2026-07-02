@@ -6,6 +6,8 @@ const CALENDAR_BODY_KEY = "calendar:body";
 const CALENDAR_GENERATED_AT_KEY = "calendar:generated_at";
 
 export function createWorker({ bundledHolidayYaml, bundledCalendar, bundledGeneratedAt }) {
+  const bundledGeneratedAtValue = bundledGeneratedAt.trim() || null;
+
   function loadHolidayConfig() {
     const config = yaml.load(bundledHolidayYaml);
     validateHolidayConfig(config);
@@ -23,16 +25,46 @@ export function createWorker({ bundledHolidayYaml, bundledCalendar, bundledGener
     return env.CALENDAR_CACHE ?? null;
   }
 
-  async function storeCalendar(env, generatedAt = new Date().toISOString()) {
+  async function storeCalendarBody(env, calendar, generatedAt) {
     const namespace = getKvNamespace(env);
     if (!namespace) {
       throw new Error("CALENDAR_CACHE binding is not configured");
     }
 
-    const calendar = generateCalendar(env);
     await namespace.put(CALENDAR_BODY_KEY, calendar);
     await namespace.put(CALENDAR_GENERATED_AT_KEY, generatedAt);
     return { body: calendar, generatedAt, source: "kv" };
+  }
+
+  async function storeCalendar(env, generatedAt = new Date().toISOString()) {
+    return storeCalendarBody(env, generateCalendar(env), generatedAt);
+  }
+
+  function parseGeneratedAt(value) {
+    if (!value) {
+      return null;
+    }
+
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? null : timestamp;
+  }
+
+  function isBundledCalendarNewer(generatedAt) {
+    const bundledTimestamp = parseGeneratedAt(bundledGeneratedAtValue);
+    if (bundledTimestamp === null) {
+      return false;
+    }
+
+    const storedTimestamp = parseGeneratedAt(generatedAt);
+    return storedTimestamp === null || bundledTimestamp > storedTimestamp;
+  }
+
+  async function refreshStaleKv(env) {
+    if (!bundledGeneratedAtValue) {
+      return null;
+    }
+
+    return storeCalendarBody(env, bundledCalendar, bundledGeneratedAtValue);
   }
 
   async function loadServedCalendar(env) {
@@ -42,15 +74,23 @@ export function createWorker({ bundledHolidayYaml, bundledCalendar, bundledGener
         namespace.get(CALENDAR_BODY_KEY),
         namespace.get(CALENDAR_GENERATED_AT_KEY),
       ]);
-      if (body) {
-        return { body, generatedAt, source: "kv" };
+      if (body && !isBundledCalendarNewer(generatedAt)) {
+        return { body, generatedAt, source: "kv", refreshKv: false };
       }
+
+      return {
+        body: bundledCalendar,
+        generatedAt: bundledGeneratedAtValue,
+        source: "bundle",
+        refreshKv: Boolean(bundledGeneratedAtValue),
+      };
     }
 
     return {
       body: bundledCalendar,
-      generatedAt: bundledGeneratedAt.trim() || null,
+      generatedAt: bundledGeneratedAtValue,
       source: "bundle",
+      refreshKv: false,
     };
   }
 
@@ -70,7 +110,7 @@ export function createWorker({ bundledHolidayYaml, bundledCalendar, bundledGener
   }
 
   return {
-    async fetch(request, env) {
+    async fetch(request, env, ctx) {
       const url = new URL(request.url);
       if (request.method !== "GET" && request.method !== "HEAD") {
         return new Response("Method Not Allowed", { status: 405 });
@@ -80,7 +120,10 @@ export function createWorker({ bundledHolidayYaml, bundledCalendar, bundledGener
         return new Response("ok");
       }
 
-      const { body, generatedAt, source } = await loadServedCalendar(env);
+      const { body, generatedAt, source, refreshKv } = await loadServedCalendar(env);
+      if (refreshKv && ctx) {
+        ctx.waitUntil(refreshStaleKv(env));
+      }
 
       if (request.method === "HEAD") {
         return calendarResponse("", generatedAt, source);

@@ -91,6 +91,8 @@ Setup steps:
 4. Deploy from the repo root with `npx wrangler deploy`.
 5. Subscribe iCloud or any other calendar client to the Worker URL.
 
+When the repository is connected to Cloudflare, merging to the configured production branch triggers the Cloudflare build and deploy. The Worker compares the bundled deploy-time calendar timestamp with `CALENDAR_CACHE`; if KV is stale, it serves the fresh bundled calendar and refreshes KV in the background so subscribers receive the new feed without waiting for the monthly cron.
+
 ## Repository Automation
 [update-calendar.yml](/Users/as082003/IdeaProjects/calendar/.github/workflows/update-calendar.yml) is validation-only. It checks formatting, linting, typing, tests, and a dry-run calendar build on pushes and pull requests.
 
