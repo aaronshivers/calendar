@@ -49,6 +49,30 @@ const headResponse = await worker.fetch(new Request("https://calendar.corncob.ap
 assert(headResponse.status === 200, "Expected HEAD / to succeed");
 assert((await headResponse.text()) === "", "Expected empty HEAD body");
 
+await kv.put("calendar:body", "STALE CALENDAR");
+await kv.put("calendar:generated_at", "2000-01-01T00:00:00.000Z");
+const refreshTasks = [];
+const staleKvResponse = await worker.fetch(new Request("https://calendar.corncob.app"), env, {
+  waitUntil(promise) {
+    refreshTasks.push(promise);
+  },
+});
+assert(
+  staleKvResponse.headers.get("x-calendar-source") === "bundle",
+  "Expected fresh bundle over stale KV"
+);
+assert(
+  (await staleKvResponse.text()).includes("BEGIN:VCALENDAR"),
+  "Expected bundled iCalendar body"
+);
+await Promise.all(refreshTasks);
+assert((await kv.get("calendar:body")).includes("BEGIN:VCALENDAR"), "Expected stale KV to refresh");
+assert(
+  (await kv.get("calendar:generated_at")) ===
+    staleKvResponse.headers.get("x-calendar-generated-at"),
+  "Expected stale KV timestamp to refresh"
+);
+
 const scheduledTasks = [];
 await worker.scheduled(
   { cron: "0 0 1 * *" },
