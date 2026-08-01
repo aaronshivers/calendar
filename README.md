@@ -63,10 +63,12 @@ If you run these commands against an installed, read-only package, pass `--holid
 You can also disable a holiday without deleting it:
 
 ```yaml
-manual_holidays:
+calculated_holidays:
   - name: National Ice Cream Day
+    type: nth_weekday
     month: 7
-    day: 21
+    weekday: 6
+    nth: 3
     enabled: false
 ```
 
