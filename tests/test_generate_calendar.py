@@ -45,8 +45,12 @@ def test_default_end_year_is_inclusive() -> None:
 
 def test_load_holidays_uses_bundled_data() -> None:
     holiday_config = load_holidays()
-    manual_names = {holiday["name"] for holiday in holiday_config["manual_holidays"]}
-    assert "National Ice Cream Day" in manual_names
+    holiday_names = {
+        holiday["name"]
+        for section in ("manual_holidays", "calculated_holidays", "federal_holidays")
+        for holiday in holiday_config[section]
+    }
+    assert "National Ice Cream Day" in holiday_names
 
 
 def test_validate_holiday_definitions_rejects_duplicate_names() -> None:
@@ -83,6 +87,25 @@ def test_generate_calendar_dry_run_does_not_write_file(tmp_path: Path) -> None:
 def test_build_holiday_entries_rejects_inverted_year_range() -> None:
     with pytest.raises(ValueError, match="end_year must be greater than or equal to start_year"):
         build_holiday_entries(2026, 2025)
+
+
+@pytest.mark.parametrize(
+    ("year", "expected_date"),
+    [
+        (2025, date(2025, 7, 20)),
+        (2026, date(2026, 7, 19)),
+        (2027, date(2027, 7, 18)),
+    ],
+)
+def test_build_holiday_entries_calculates_national_ice_cream_day(
+    year: int, expected_date: date
+) -> None:
+    holidays = build_holiday_entries(year, year)
+    ice_cream_days = [
+        holiday for holiday in holidays if holiday["name"] == "National Ice Cream Day"
+    ]
+
+    assert ice_cream_days == [{"name": "National Ice Cream Day", "date": expected_date}]
 
 
 @pytest.mark.parametrize(
